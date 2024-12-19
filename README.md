@@ -2,10 +2,8 @@
 
 ---
 
-### **1. Real-Time Communication**
-- **Purpose**: The WebSocket block enables real-time bidirectional communication between the frontend and the backend.
-- **Use Case**:
-  - Live updates of calibration status or progress from the backend to the frontend.
-  - Instant feedback or control commands from the frontend to the backend.
-
+To use this:
+- Run from /Interface directory
+- Run /FastApi/Server.py or /Websocket/Server.py (not at the same time :))
+- Open index.html with your Browser (refresh when restarting the server scripts)
 ---
