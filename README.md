@@ -13,4 +13,5 @@ To use this:
 
 
 Purpose of Websockets: The WebSocket block enables real-time bidirectional communication between the frontend and the backend.
+
 ---
