@@ -5,12 +5,11 @@ from websocket_server import WebsocketServer
 
 message = "status ok"
 
-
-def new_client(client):
+def new_client(client,server):
     print(f"New client connected: {client['id']}")
 
-def message_received(client, msg):
-    print(f"Message from client {client['id']}: {msg}")
+def message_received(client, server, message):
+    print(f"Message from client {client['id']}: {message}")
 
 def send_updates(server):
     global message
