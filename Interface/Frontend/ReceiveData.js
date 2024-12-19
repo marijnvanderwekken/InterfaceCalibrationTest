@@ -1,3 +1,4 @@
+
 const ws = new WebSocket("ws://127.0.0.1:8000/ws");
 ws.onopen = () => {
     console.log("Connected to server");
@@ -16,3 +17,9 @@ ws.onerror = (error) => {
 ws.onclose = () => {
     console.log("connection closed");
 };
+
+function sendButtonClick(){
+    ws.send("Start calibration");
+    console.log("Start calibration")
+   
+}
