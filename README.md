@@ -10,4 +10,7 @@ To use this:
 
 ![image](https://github.com/user-attachments/assets/f291c9df-a680-4076-a609-0622a532f6a9)
 
+
+
+Purpose of Websockets: The WebSocket block enables real-time bidirectional communication between the frontend and the backend.
 ---
