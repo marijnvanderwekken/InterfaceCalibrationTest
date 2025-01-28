@@ -30,6 +30,7 @@ class WebSocketServer:
         self.clients = []
         self.app = FastAPI()
         self.message = "status ok"
+        self.previousmessage = ""
         self.websocket_path = self.config.get('websocket','path')
         self.app.websocket(self.websocket_path)(self.websocket_endpoint)
 
@@ -61,8 +62,9 @@ class WebSocketServer:
         try:
             while connected:
                 await asyncio.sleep(1)
-                if connected:
+                if connected and self.message != self.previousmessage:
                     await websocket.send_text(f"{self.message}")
+                    self.previousmessage = self.message
         except WebSocketDisconnect:
             logging.info(f"Client nr: {clientId} disconnected")
             self.clients.remove(websocket)
