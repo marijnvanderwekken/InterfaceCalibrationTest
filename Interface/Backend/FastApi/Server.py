@@ -4,6 +4,9 @@ import uvicorn
 import asyncio
 import json
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -17,11 +20,16 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             await asyncio.sleep(1)
             await websocket.send_text(f"{message}")
+            
+            data = await websocket.receive_text()
+            print(f"Data:{data}")
     except Exception as e:
         print(f"Error: {e}")
 
 def run_server():
     uvicorn.run(app, host="127.0.0.1", port=8000)
+
+
 
 def read_json():
     global message
