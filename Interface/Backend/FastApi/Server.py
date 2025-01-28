@@ -8,6 +8,7 @@ import logging
 import os
 import configparser
 
+
 device_settings_path = os.getcwd() + "/config.ini"
 
 config = configparser.ConfigParser(interpolation=None)
@@ -26,7 +27,7 @@ class WebSocketServer:
     def __init__(self):
         self.config = configparser.ConfigParser()
         self.config.read(device_settings_path)
-
+        self.clients = []
         self.app = FastAPI()
         self.message = "status ok"
         self.websocket_path = self.config.get('websocket','path')
@@ -34,8 +35,11 @@ class WebSocketServer:
 
     async def websocket_endpoint(self, websocket: WebSocket):
         await websocket.accept()
+        self.clients.append(websocket)
+        logging.info(f"Client nr: {len(self.clients)} connected")
+        
         connected = True
-
+        
         async def receive_messages():
             nonlocal connected
             while connected:
@@ -43,7 +47,8 @@ class WebSocketServer:
                     data = await websocket.receive_text()
                     logging.info(f"Data: {data}")
                 except WebSocketDisconnect:
-                    logging.info("Client disconnected")
+                    logging.info(f"Client nr: {len(self.clients)} disconnected")
+                    self.clients.remove(websocket)
                     connected = False
                     break
                 except Exception as e:
@@ -59,7 +64,8 @@ class WebSocketServer:
                 if connected:
                     await websocket.send_text(f"{self.message}")
         except WebSocketDisconnect:
-            logging.info("Client disconnected")
+            logging.info(f"Client nr: {len(self.clients)} disconnected")
+            self.clients.remove(websocket)
         except Exception as e:
             logging.info(f"Error: {e}")
         finally:
@@ -90,8 +96,6 @@ class JSONReader:
 if __name__ == "__main__":
     ws_server = WebSocketServer()
     json_reader = JSONReader(ws_server)
-
     server_thread = Thread(target=ws_server.run_server, daemon=True)
     server_thread.start()
-
     json_reader.read_json()
