@@ -13,7 +13,7 @@
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/yourusername/InterfaceCalibrationTest.git
+    git clone https://github.com/marijnvanderwekken/InterfaceCalibrationTest.git
     cd InterfaceCalibrationTest
     ```
 
