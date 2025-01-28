@@ -7,16 +7,30 @@ import time
 import logging
 import os
 import configparser
-logger = logging.getLogger(__name__)
-
 
 device_settings_path = os.getcwd() + "/config.ini"
 
+config = configparser.ConfigParser(interpolation=None)
+config.read(device_settings_path)
+
+logging_config = config['logging']
+logging.basicConfig(
+    filename=logging_config.get('filename'),
+    filemode=logging_config.get('filemode'),
+    format=logging_config.get('format'),
+    datefmt=logging_config.get('datefmt'),
+    level=getattr(logging,logging_config.get('level').upper(),logging.INFO)
+)
+
 class WebSocketServer:
     def __init__(self):
+        self.config = configparser.ConfigParser()
+        self.config.read(device_settings_path)
+
         self.app = FastAPI()
         self.message = "status ok"
-        self.app.websocket("/ws")(self.websocket_endpoint)
+        self.websocket_path = self.config.get('websocket','path')
+        self.app.websocket(self.websocket_path)(self.websocket_endpoint)
 
     async def websocket_endpoint(self, websocket: WebSocket):
         await websocket.accept()
@@ -27,13 +41,13 @@ class WebSocketServer:
             while connected:
                 try:
                     data = await websocket.receive_text()
-                    print(f"Data: {data}")
+                    logging.info(f"Data: {data}")
                 except WebSocketDisconnect:
-                    print("Client disconnected")
+                    logging.info("Client disconnected")
                     connected = False
                     break
                 except Exception as e:
-                    print(f"Error: {e}")
+                    logging.info(f"Error: {e}")
                     connected = False
                     break
 
@@ -45,9 +59,9 @@ class WebSocketServer:
                 if connected:
                     await websocket.send_text(f"{self.message}")
         except WebSocketDisconnect:
-            print("Client disconnected")
+            logging.info("Client disconnected")
         except Exception as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
         finally:
             connected = False
 
@@ -70,7 +84,7 @@ class JSONReader:
                     self.server.message = d['message']
                     self.server.message = f"message: {self.server.message}"
             except Exception as e:
-                print(f"Error reading JSON: {e}")
+                logging.info(f"Error reading JSON: {e}")
             time.sleep(1)
 
 if __name__ == "__main__":
