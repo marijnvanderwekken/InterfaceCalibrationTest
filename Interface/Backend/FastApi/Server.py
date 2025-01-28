@@ -33,10 +33,10 @@ class WebSocketServer:
         self.websocket_path = self.config.get('websocket','path')
         self.app.websocket(self.websocket_path)(self.websocket_endpoint)
 
-    async def websocket_endpoint(self, websocket: WebSocket):
+    async def websocket_endpoint(self, websocket: WebSocket, clientId: int):
         await websocket.accept()
         self.clients.append(websocket)
-        logging.info(f"Client nr: {len(self.clients)} connected")
+        logging.info(f"Client nr: {clientId} connected")
         
         connected = True
         
@@ -45,9 +45,9 @@ class WebSocketServer:
             while connected:
                 try:
                     data = await websocket.receive_text()
-                    logging.info(f"Data: {data}")
+                    logging.info(f"Data from Client: {clientId} : {data}")
                 except WebSocketDisconnect:
-                    logging.info(f"Client nr: {len(self.clients)} disconnected")
+                    logging.info(f"Client nr: {clientId} disconnected")
                     self.clients.remove(websocket)
                     connected = False
                     break
@@ -64,7 +64,7 @@ class WebSocketServer:
                 if connected:
                     await websocket.send_text(f"{self.message}")
         except WebSocketDisconnect:
-            logging.info(f"Client nr: {len(self.clients)} disconnected")
+            logging.info(f"Client nr: {clientId} disconnected")
             self.clients.remove(websocket)
         except Exception as e:
             logging.info(f"Error: {e}")

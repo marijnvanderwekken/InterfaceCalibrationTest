@@ -1,7 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const ws = new WebSocket("ws://127.0.0.1:8000/ws");
+    
+    const clientId = 2
     const statusr = document.getElementById("status");
-
+    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/${clientId}`);
+    
     ws.onopen = () => {
         Changestatus("Connected to server");
     };

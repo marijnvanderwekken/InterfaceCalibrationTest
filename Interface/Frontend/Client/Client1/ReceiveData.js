@@ -1,26 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
-    function draw() {
-        const ctx = document.getElementById("canvas").getContext("2d");
-        const img = new Image();
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0);
-            ctx.beginPath();
-            ctx.moveTo(30, 96);
-            ctx.lineTo(70, 66);
-            ctx.lineTo(103, 76);
-            ctx.lineTo(170, 15);
-            ctx.stroke();
-        };
-        img.src = "backdrop.png";
-    }
-
-    draw();
-});
-  
-document.addEventListener("DOMContentLoaded", () => {
-    const ws = new WebSocket("ws://127.0.0.1:8000/ws");
+    
+    const clientId = 1
     const statusr = document.getElementById("status");
-
+    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/${clientId}`);
     ws.onopen = () => {
         Changestatus("Connected to server "+ ws.url)
     };
