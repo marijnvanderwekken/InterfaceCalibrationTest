@@ -8,7 +8,7 @@ message = "status ok"
 def new_client(client,server):
     print(f"New client connected: {client['id']}")
 
-def message_received(client, server, message):
+def handle_message(client, server, message):
     print(f"Message from client {client['id']}: {message}")
 
 def send_updates(server):
@@ -34,7 +34,7 @@ def read_json():
 def run_websocket_server():
     server = WebsocketServer(host="127.0.0.1", port=8000)
     server.set_fn_new_client(new_client)
-    server.set_fn_message_received(message_received)
+    server.set_fn_message_received(handle_message)
     server_thread = Thread(target=server.run_forever, daemon=True)
     server_thread.start()
     send_updates(server)
