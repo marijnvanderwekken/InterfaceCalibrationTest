@@ -38,7 +38,7 @@
 
 2. Alternatively, you can run the WebSocket server:
     ```sh
-    python3 Backend/Websocket/Server.py
+    python3 Interface/Backend/Websocket/Server.py
     ```
 
 **Note:** Do not run both servers at the same time.
