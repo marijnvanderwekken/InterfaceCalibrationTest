@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const output = document.getElementById("output");
         output.textContent = event.data;
     };
+    
 
     ws.onerror = (error) => {
         Changestatus("error: " + error.message);

@@ -25,17 +25,17 @@ logging.basicConfig(
 
 class WebSocketServer:
     def __init__(self):
-        self.config = configparser.ConfigParser()
-        self.config.read(device_settings_path)
+        self.config = config
         self.clients = {}
         self.app = FastAPI()
         self.message = "status ok"
         self.previousmessage = ""
-        self.websocket_path = self.config.get('websocket','path')
+        self.websocket_path = self.config.get('websocket', 'path')
         self.websocket_keep_alive = 300
         self.app.websocket(self.websocket_path)(self.websocket_endpoint)
         self.data = ""
-
+        self.status = ""
+        self.previousstatus = ""
 
     async def websocket_endpoint(self, websocket: WebSocket, clientId: str):
         await websocket.accept()
@@ -50,6 +50,9 @@ class WebSocketServer:
                 try:
                     self.data = await websocket.receive_text()
                     logging.info(f"Data from Client: {clientId} : {self.data}")
+                    if self.data[:6] == "status":
+                        self.status = self.data[6:]
+                        
                 except WebSocketDisconnect:
                     logging.info(f"Client nr: {clientId} disconnected")
                     del self.clients[clientId]
@@ -71,12 +74,9 @@ class WebSocketServer:
                     if messageType == "B_end":
                         await self.send_message_to_client("B1",self.data)
                         self.previousmessage = self.data
-                    elif messageType == "F_end":
-                        await self.send_message_to_client("F1",self.data)
-                        self.previousmessage = self.data
-
-                if connected and self.data != self.previousmessage:
-                    await self.send_message_to_client("F1",self.data)
+                    if self.status != self.previousstatus:
+                        await self.send_message_to_client("F1", self.status)
+                        self.previousstatus = self.status
 
         except WebSocketDisconnect:
             logging.info(f"Client nr: {clientId} disconnected")
