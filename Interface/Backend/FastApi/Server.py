@@ -25,12 +25,14 @@ logging.basicConfig(
 
 class WebSocketServer:
     def __init__(self):
-        self.config = config
-        self.clients = {}
+        self.config = configparser.ConfigParser()
+        self.config.read(device_settings_path)
+        self.frontend_clients = {}
+        self.backend_clients = {}
         self.app = FastAPI()
         self.message = "status ok"
         self.previousmessage = ""
-        self.websocket_path = self.config.get('websocket', 'path')
+        self.websocket_path = self.config.get('websocket','path')
         self.websocket_keep_alive = 300
         self.app.websocket(self.websocket_path)(self.websocket_endpoint)
         self.data = ""
@@ -39,7 +41,16 @@ class WebSocketServer:
 
     async def websocket_endpoint(self, websocket: WebSocket, clientId: str):
         await websocket.accept()
-        self.clients[clientId] = websocket
+        if clientId in self.frontend_clients or clientId in self.backend_clients:
+            await websocket.close()
+            logging.info(f"Client nr: {clientId} already connected")
+            return
+        if clientId[:1] == "F":
+            self.frontend_clients[clientId] = websocket
+        elif clientId[:1] == "B":    
+            self.backend_clients[clientId] = websocket
+        else:
+            logging.info("Client nr not available")
         logging.info(f"Client nr: {clientId} connected")
     
         connected = True
@@ -55,7 +66,10 @@ class WebSocketServer:
                         
                 except WebSocketDisconnect:
                     logging.info(f"Client nr: {clientId} disconnected")
-                    del self.clients[clientId]
+                    if clientId in self.frontend_clients:
+                        del self.frontend_clients[clientId]
+                    elif clientId in self.backend_clients:
+                        del self.backend_clients[clientId]
                     connected = False
                     break
                 except Exception as e:
@@ -75,20 +89,28 @@ class WebSocketServer:
                         await self.send_message_to_client("B1",self.data)
                         self.previousmessage = self.data
                     if self.status != self.previousstatus:
-                        await self.send_message_to_client("F1", self.status)
-                        self.previousstatus = self.status
+                        for clientId in self.frontend_clients:
+                            await self.send_message_to_client(clientId, self.status)
+                            self.previousstatus = self.status
 
         except WebSocketDisconnect:
             logging.info(f"Client nr: {clientId} disconnected")
-            del self.clients[clientId]
+            if clientId in self.frontend_clients:
+                del self.frontend_clients[clientId]
+            elif clientId in self.backend_clients:
+                del self.backend_clients[clientId]
+
         except Exception as e:
             logging.info(f"Error: {e}")
         finally:
             connected = False
 
     async def send_message_to_client(self, clientId: str, message: str):
-        if clientId in self.clients:
-            websocket = self.clients[clientId]
+        if clientId in self.frontend_clients:
+            websocket = self.frontend_clients[clientId]
+            await websocket.send_text(message) 
+        elif clientId in self.backend_clients:    
+            websocket = self.backend_clients[clientId]
             await websocket.send_text(message)
             logging.info(f"Sent message to Client {clientId}: {message}")
         else:

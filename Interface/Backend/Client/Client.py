@@ -3,29 +3,6 @@ import websockets
 import logging
 import json
 
-logging.basicConfig(level=logging.INFO)
-
-def start_calibration():
-    try:
-        with open('test2.json',"w") as f:
-            json.dump({"status": "running calibration"}, f)
-    except Exception as e:
-                    logging.error(f"Error writing JSON: {e}")
-
-
-def stop_calibration():
-    try:
-        with open('test2.json',"w") as f:
-            json.dump({"status": "stopping calibration"} , f)
-    except Exception as e:
-                    logging.error(f"Error writing JSON: {e}")
-
-
-command_dict = {
-    "B_end_start_calibration": start_calibration,
-    "B_end_stop_calibration": stop_calibration
-}
-
 class WebSocketClient:
     def __init__(self):
         self.clientId = "B1"
@@ -34,6 +11,7 @@ class WebSocketClient:
         self.response = None
         self.status = " "
         self.previousstatus = ""
+        self.command_dict = {}
 
     async def connect(self):
         while True:
@@ -44,7 +22,7 @@ class WebSocketClient:
                     async def send_status():
                         while True:
                             if self.status != self.previousstatus:
-                                await websocket.send(f"status:{self.status}")
+                                await websocket.send(f"status{self.status}")
                                 logging.info(f"Sent status: {self.status}")
                                 self.previousstatus = self.status
                             await asyncio.sleep(1)
@@ -53,9 +31,10 @@ class WebSocketClient:
                         while True:
                             try:
                                 self.response = await websocket.recv()
-                                command = self.response
-                                if command in command_dict:
-                                    command_dict[command]()
+                                command = self.response.strip()
+
+                                if command in self.command_dict:
+                                    self.command_dict[command]()
                                     await websocket.send(f"Command received, running: {command}")
                                 else:
                                     await websocket.send(f"Unknown command: {command}")
@@ -83,15 +62,38 @@ class JSONReader:
             try:
                 with open('test2.json') as f:
                     d = json.load(f)
-                    self.client.status = d['status']
+                    #self.client.status = d['status'] 
             except Exception as e:
                 logging.error(f"Error reading JSON: {e}")
             await asyncio.sleep(1)
 
+class Calibration:
+    def __init__(self, client: WebSocketClient):
+        self.client = client
+        self.client.command_dict = { 
+            "B_end_start_calibration": self.start_calibration,
+            "B_end_stop_calibration": self.stop_calibration,
+            "B_end_pause_calibration": self.pause_calibration
+        }
+
+    def start_calibration(self):
+        self.client.status = "Start calibration"  
+
+    def stop_calibration(self):
+        self.client.status = "Stop calibration"
+          
+    def pause_calibration(self):
+        self.client.status = "Pause calibration"  
+
+
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+
     wsc = WebSocketClient()
     json_reader = JSONReader(wsc)
+    CalibrationProces = Calibration(wsc)  
+
     loop = asyncio.get_event_loop()
-    loop.create_task(wsc.connect())
+    loop.create_task(wsc.connect()) 
     loop.create_task(json_reader.read_json())
-    loop.run_forever()
+    loop.run_forever() 
