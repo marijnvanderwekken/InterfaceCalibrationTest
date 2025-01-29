@@ -4,53 +4,64 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client 2</title>
-    <a href="../all.html" class="button">Back</a>
-    <script src="ReceiveData.js"></script>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        h1 {
-            color: #2e5426;
-        }
-        h3 {
-            color: #2e5426;
-        }
-        div {
-            color: black;
-        }
-        button {
-            color: white;
-            background-color: #2e5426;
-            cursor: pointer;
-        }
         body {
-            background-color: white;
+            padding: 20px;
         }
         .button {
             color: white;
             background-color: #2e5426;
             cursor: pointer;
-        }       
-
+        }
+        .card {
+            margin-top: 20px;
+        }
+        .custom-btn{
+            background-color: #2e5426;
+            color: white;
+        }
     </style>
 </head>
-
 <body>
-    <h1>Client 2</h1>
-    <h3>Output:</h3>
-    <div id="output"></div>
-    <h3>Message to backend client:</h3>
-    <input type="text" id="message" name="message"><br><br>
-    <button onclick="sendMessageButtonb(document.getElementById('message').value)">Send Message</button>
-    <h3>Message to frontend client:</h3>
-    <input type="text" id="message1" name="message1"><br><br>
-    <button onclick="sendMessageButtonf(document.getElementById('message1').value)">Send Message</button>
-    <h3>Status:</h3>
-    <div id="status"></div>
-
-    <button onclick="sendButtonClick('B_end_start_calibration')">Start calibration</button>
-    <button onclick="sendButtonClick('B_end_stop_calibration')">Stop calibration</button>
-    <button onclick="sendButtonClick('B_end_pause_calibration')">Pause calibration</button>
+    <div class="container">
+        <h1 class="text-center">Client 2</h1>
+        <div class="card">
+            <div class="card-body">
+                <h3>Status Backend:</h3>
+                <div id="output" class="border p-3"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h3>Status Frontend:</h3>
+                <div id="status" class="border p-3"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h3>Message to Websocket:</h3>
+                <div class="input-group mb-3">
+                    <input type="text" id="message" name="message" class="form-control" placeholder="Enter message">
+                    <div class="input-group-append">
+                        <button class="btn custom-btn" onclick="sendMessageButtonb(document.getElementById('message').value)">Send Message</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        
+        <div class="card">
+            <div class="card-body text-center">
+                <button class="btn custom-btn" onclick="sendButtonClick('B_end_start_calibration')">Start Calibration</button>
+                <button class="btn custom-btn" onclick="sendButtonClick('B_end_stop_calibration')">Stop Calibration</button>
+                <button class="btn custom-btn" onclick="sendButtonClick('B_end_pause_calibration')">Pause Calibration</button>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="ReceiveData.js"></script>
 </body>
 </html>
-
-
-

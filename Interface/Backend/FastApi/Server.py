@@ -44,6 +44,11 @@ class WebSocketServer:
         if clientId in self.frontend_clients or clientId in self.backend_clients:
             await websocket.close()
             logging.info(f"Client nr: {clientId} already connected")
+            if clientId in self.frontend_clients:
+                del self.frontend_clients[clientId]
+            elif clientId in self.backend_clients:
+                del self.backend_clients[clientId]
+                
             return
         if clientId[:1] == "F":
             self.frontend_clients[clientId] = websocket
@@ -86,9 +91,10 @@ class WebSocketServer:
                     messageType = self.data[:5]
                     self.data = self.data[5:]
                     if messageType == "B_end":
-                        await self.send_message_to_client("B1",self.data)
-                        self.previousmessage = self.data
-                    if self.status != self.previousstatus:
+                        for clientId in self.backend_clients:
+                            await self.send_message_to_client(clientId,self.data)
+                            self.previousmessage = self.data
+                if self.status != self.previousstatus:
                         for clientId in self.frontend_clients:
                             await self.send_message_to_client(clientId, self.status)
                             self.previousstatus = self.status
@@ -116,8 +122,6 @@ class WebSocketServer:
         else:
             logging.info(f"Client {clientId} not connected")
         
-        
-
     def run_server(self):
         config = configparser.ConfigParser()
         config.read(device_settings_path)
