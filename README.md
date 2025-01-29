@@ -1,4 +1,4 @@
-# InterfaceCalibrationTest
+# Interface for calibration
 
 
 ## Getting Started
@@ -8,6 +8,8 @@
 - Python 3.x
 - FastAPI
 - Uvicorn
+- Websockets
+- Websockets-client
 
 ### Installation
 
@@ -43,7 +45,7 @@
 
 **Note:** Do not run both servers at the same time.
 
-### Running the Frontend
+### Running the Frontend Client
 
 1. Open `index.html` in your web browser:
     ```sh
@@ -52,10 +54,14 @@
 
 2. Refresh the page if you restart the server scripts to reconnect with the WebSocket.
 
-### Modifying the JSON
+### Running the Backend Client
 
-1. To modify the JSON file, run the [TestCalibrationScript.py](http://_vscodecontentref_/2) script:
+1. Run the Client.py:
     ```sh
-    python3 TestCalibrationScript.py
+    python3 Interface/Backend/Client/Client.py
     ```
+
+2. It will automatically reconnect when the WebSocket server is not running.
+
+
 
