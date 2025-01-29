@@ -27,58 +27,81 @@ class WebSocketServer:
     def __init__(self):
         self.config = configparser.ConfigParser()
         self.config.read(device_settings_path)
-        self.clients = []
+        self.clients = {}
         self.app = FastAPI()
         self.message = "status ok"
         self.previousmessage = ""
         self.websocket_path = self.config.get('websocket','path')
+        self.websocket_keep_alive = 300
         self.app.websocket(self.websocket_path)(self.websocket_endpoint)
+        self.data = ""
 
-    async def websocket_endpoint(self, websocket: WebSocket, clientId: int):
+
+    async def websocket_endpoint(self, websocket: WebSocket, clientId: str):
         await websocket.accept()
-        self.clients.append(websocket)
+        self.clients[clientId] = websocket
         logging.info(f"Client nr: {clientId} connected")
-        
+    
         connected = True
         
         async def receive_messages():
             nonlocal connected
             while connected:
                 try:
-                    data = await websocket.receive_text()
-                    logging.info(f"Data from Client: {clientId} : {data}")
+                    self.data = await websocket.receive_text()
+                    logging.info(f"Data from Client: {clientId} : {self.data}")
                 except WebSocketDisconnect:
                     logging.info(f"Client nr: {clientId} disconnected")
-                    self.clients.remove(websocket)
+                    del self.clients[clientId]
                     connected = False
                     break
                 except Exception as e:
                     logging.info(f"Error: {e}")
                     connected = False
-                    break
-
+                    break   
+                
         asyncio.create_task(receive_messages())
-
+        
         try:
             while connected:
                 await asyncio.sleep(1)
-                if connected and self.message != self.previousmessage:
-                    await websocket.send_text(f"{self.message}")
-                    self.previousmessage = self.message
+                if connected and self.data != self.previousmessage:
+                    messageType = self.data[:5]
+                    self.data = self.data[5:]
+                    if messageType == "B_end":
+                        await self.send_message_to_client("B1",self.data)
+                        self.previousmessage = self.data
+                    elif messageType == "F_end":
+                        await self.send_message_to_client("F1",self.data)
+                        self.previousmessage = self.data
+
+                if connected and self.data != self.previousmessage:
+                    await self.send_message_to_client("F1",self.data)
+
         except WebSocketDisconnect:
             logging.info(f"Client nr: {clientId} disconnected")
-            self.clients.remove(websocket)
+            del self.clients[clientId]
         except Exception as e:
             logging.info(f"Error: {e}")
         finally:
             connected = False
+
+    async def send_message_to_client(self, clientId: str, message: str):
+        if clientId in self.clients:
+            websocket = self.clients[clientId]
+            await websocket.send_text(message)
+            logging.info(f"Sent message to Client {clientId}: {message}")
+        else:
+            logging.info(f"Client {clientId} not connected")
+        
+        
 
     def run_server(self):
         config = configparser.ConfigParser()
         config.read(device_settings_path)
         host = config.get('server', 'host')
         port = config.getint('server', 'port')
-        uvicorn.run(self.app, host=host, port=port)
+        uvicorn.run(self.app, host=host, port=port, timeout_keep_alive=300, ws_ping_interval=None, ws_ping_timeout=None)
 
 class JSONReader:
     def __init__(self, server: WebSocketServer):
