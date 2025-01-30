@@ -17,7 +17,7 @@
         .card {
             margin-top: 20px;
         }
-        .custom-btn{
+        .custom-btn {
             background-color: #2e5426;
             color: white;
         }
@@ -26,36 +26,49 @@
 <body>
     <div class="container">
         <h1 class="text-center">Client 1</h1>
-        <div class="card">
-            <div class="card-body">
-                <h3>Status Backend:</h3>
-                <div id="output" class="border p-3"></div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Status Backend:</h3>
+                        <div id="output" class="border p-3"></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Combined Image:</h3>
+                        <div id="imgContainer" class="border p-3"></div>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="card">
-            <div class="card-body">
-                <h3>Status Frontend:</h3>
-                <div id="status" class="border p-3"></div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-body">
-                <h3>Message to Websocket:</h3>
-                <div class="input-group mb-3">
-                    <input type="text" id="message" name="message" class="form-control" placeholder="Enter message">
-                    <div class="input-group-append">
-                        <button class="btn custom-btn" onclick="sendMessageButtonb(document.getElementById('message').value)">Send Message</button>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Status Frontend:</h3>
+                        <div id="status" class="border p-3"></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Message to Websocket:</h3>
+                        <div class="input-group mb-3">
+                            <input type="text" id="message" name="message" class="form-control" placeholder="Enter message">
+                            <div class="input-group-append">
+                                <button class="btn custom-btn" onclick="sendMessageButtonb(document.getElementById('message').value)">Send Message</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        
         <div class="card">
             <div class="card-body text-center">
-                <button class="btn custom-btn" onclick="sendButtonClick('B_end_start_calibration')">Start Calibration</button>
-                <button class="btn custom-btn" onclick="sendButtonClick('B_end_stop_calibration')">Stop Calibration</button>
-                <button class="btn custom-btn" onclick="sendButtonClick('B_end_pause_calibration')">Pause Calibration</button>
+                <button class="btn custom-btn m-2" onclick="sendButtonToBackendClick('B_end_start_calibration')">Start Calibration</button>
+                <button class="btn custom-btn m-2" onclick="sendButtonToBackendClick('B_end_stop_calibration')">Stop Calibration</button>
+                <button class="btn custom-btn m-2" onclick="sendButtonToBackendClick('B_end_pause_calibration')">Pause Calibration</button>
+                <button class="btn custom-btn m-2" onclick="sendButtonToBackendClick('B_end_send_images')">Receive combined image</button>
+                <button class="btn custom-btn m-2" onclick="sendButtonToWebSocketClick('picture')">Combine images</button>
             </div>
         </div>
     </div>

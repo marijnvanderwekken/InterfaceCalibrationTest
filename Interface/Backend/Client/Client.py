@@ -2,7 +2,8 @@ import asyncio
 import websockets
 import logging
 import json
-
+import base64
+import os, os.path
 class WebSocketClient:
     def __init__(self):
         self.clientId = "B1"
@@ -12,12 +13,23 @@ class WebSocketClient:
         self.status = " "
         self.previousstatus = ""
         self.command_dict = {}
+        self.image = Image('Interface/Backend/Client/images', 4)
+        self.encoded_images = self.image.encode_images()
+        self.send_ready = False
+
 
     async def connect(self):
         while True:
             try:
                 async with websockets.connect(self.uri) as websocket:
                     logging.info("Opened connection, press CTRL + C to close connection")
+
+                    async def send_image():
+                        while True:
+                            if self.send_ready:
+                                await websocket.send(f"image_list{self.encoded_images}")
+                                self.send_ready = False
+                            await asyncio.sleep(1)
 
                     async def send_status():
                         while True:
@@ -45,8 +57,9 @@ class WebSocketClient:
 
                     receive_task = asyncio.create_task(receive_message())
                     send_task = asyncio.create_task(send_status())
+                    send_images = asyncio.create_task(send_image())
 
-                    await asyncio.gather(receive_task, send_task)
+                    await asyncio.gather(receive_task, send_task, send_images)
 
             except Exception as e:
                 logging.error(f"Connection error: {e}")
@@ -67,13 +80,39 @@ class JSONReader:
                 logging.error(f"Error reading JSON: {e}")
             await asyncio.sleep(1)
 
+class Image:
+    def __init__(self, image_path, num_of_cams):
+        self.image_path = image_path
+        self.num_of_cams = num_of_cams
+
+    def encode_images(self):
+        encoded_images = []
+        try:
+            for index in range(self.num_of_cams):
+                image_file = os.path.join(self.image_path, f"cam{index}.png")
+                try:
+                    with open(image_file, "rb") as img:
+                        encoded_string = base64.b64encode(img.read()).decode('utf-8')
+                        encoded_images.append(encoded_string)
+                        logging.info(f"Encoded image: {index}")
+                except FileNotFoundError:
+                    logging.error(f"File not found: {image_file}")
+                except Exception as e:
+                    logging.error(f"Error encoding image {image_file}: {e}")
+        except Exception as e:
+            logging.error(f"Unexpected error: {e}")
+        return encoded_images
+
+    
+    
 class Calibration:
     def __init__(self, client: WebSocketClient):
         self.client = client
         self.client.command_dict = { 
             "B_end_start_calibration": self.start_calibration,
             "B_end_stop_calibration": self.stop_calibration,
-            "B_end_pause_calibration": self.pause_calibration
+            "B_end_pause_calibration": self.pause_calibration,
+            "B_end_send_images" : self.send_images
         }
 
     def start_calibration(self):
@@ -85,10 +124,13 @@ class Calibration:
     def pause_calibration(self):
         self.client.status = "Pause calibration"  
 
+    def send_images(self):
+        self.client.status = "Parsing images"  
+        self.client.send_ready = True
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-
     wsc = WebSocketClient()
     json_reader = JSONReader(wsc)
     CalibrationProces = Calibration(wsc)  
