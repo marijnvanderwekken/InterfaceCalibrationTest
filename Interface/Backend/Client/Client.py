@@ -65,12 +65,12 @@ class WebSocketClient:
                 response = await websocket.recv()
                 if not response:
                     logging.info("Received empty response, ignoring...")
-                    continue  # Ignore empty messages
+                    continue 
 
                 logging.info(f"Received: {response}")
                 
                 try:
-                    command_data = json.loads(response)  # Ensure JSON format
+                    command_data = json.loads(response)
                     command = command_data.get("data", "").strip()
                     logging.info(command)
                     if command in self.command_dict:    

@@ -35,15 +35,8 @@
 
 1. Run the FastAPI server:
     ```sh
-    python3 Interface/Backend/FastApi/Server.py
+    python3 Interface/Backend/FastApi/main.py
     ```
-
-2. Alternatively, you can run the WebSocket server:
-    ```sh
-    python3 Interface/Backend/Websocket/Server.py
-    ```
-
-**Note:** Do not run both servers at the same time.
 
 ### Running the Frontend Client
 

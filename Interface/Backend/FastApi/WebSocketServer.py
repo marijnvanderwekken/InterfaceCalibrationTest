@@ -106,10 +106,4 @@ class WebSocketServer:
         else:
             logging.warning(f"Attempted to send message to non-existent client: {clientId}")
 
-            
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    ws_server = WebSocketServer()
-    server_thread = Thread(target=ws_server.run_server, daemon=True)
-    server_thread.start()
-    server_thread.join()
+
