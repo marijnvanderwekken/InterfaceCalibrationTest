@@ -6,21 +6,12 @@
     <title>Client 1</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {
-            padding: 20px;
-        }
-        .button {
-            color: white;
-            background-color: #2e5426;
-            cursor: pointer;
-        }
-        .card {
-            margin-top: 20px;
-        }
-        .custom-btn {
-            background-color: #2e5426;
-            color: white;
-        }
+        body { padding: 20px; }
+        .button { color: white; background-color: #2e5426; cursor: pointer; }
+        .card { margin-top: 20px; }
+        .custom-btn { background-color: #2e5426; color: white; }
+        .img-container { max-width: 300px; max-height: 300px; overflow: hidden; border: 1px solid #ddd; }
+        .img-container img { width: 100%; height: auto; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -37,11 +28,12 @@
                 <div class="card">
                     <div class="card-body">
                         <h3>Combined Image:</h3>
-                        <div id="imgContainer" class="border p-3"></div>
+                        <div id="imgContainer" class="img-container">
+                            <img id="combinedImage" src="" alt="Combined Image">
+                        </div>
                     </div>
                 </div>
             </div>
-            
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-body">
@@ -51,27 +43,30 @@
                 </div>
                 <div class="card">
                     <div class="card-body">
-                        <h3>Message to Websocket:</h3>
+                        <h3>Message to WebSocket:</h3>
                         <div class="input-group mb-3">
                             <input type="text" id="message" name="message" class="form-control" placeholder="Enter message">
                             <div class="input-group-append">
-                                <button class="btn custom-btn" onclick="sendMessageButtonb(document.getElementById('message').value)">Send Message</button>
+                                <button class="btn custom-btn" onclick="sendMessageToServer(document.getElementById('message').value)">Send Message</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
         <div class="card">
             <div class="card-body text-center">
-                <button class="btn custom-btn m-2" onclick="sendButtonToBackendClick('B_end_start_calibration')">Start Calibration</button>
-                <button class="btn custom-btn m-2" onclick="sendButtonToBackendClick('B_end_stop_calibration')">Stop Calibration</button>
-                <button class="btn custom-btn m-2" onclick="sendButtonToBackendClick('B_end_pause_calibration')">Pause Calibration</button>
-                <button class="btn custom-btn m-2" onclick="sendButtonToBackendClick('B_end_send_images')">Receive combined image</button>
-                <button class="btn custom-btn m-2" onclick="sendButtonToWebSocketClick('picture')">Combine images</button>
+                <button class="btn custom-btn m-2" onclick="sendMessageToServer('B_end_start_calibration',false)">Start Calibration</button>
+                <button class="btn custom-btn m-2" onclick="sendMessageToServer('B_end_stop_calibration')">Stop Calibration</button>
+                <button class="btn custom-btn m-2" onclick="sendMessageToServer('B_end_pause_calibration')">Pause Calibration</button>
+                <button class="btn custom-btn m-2" onclick="sendMessageToServer('B_end_send_images')">Receive combined image</button>
+        
+
             </div>
         </div>
     </div>
+
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
