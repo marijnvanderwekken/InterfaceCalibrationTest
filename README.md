@@ -45,7 +45,7 @@
     open Client/Client1/index.html
     ```
 
-2. Refresh the page if you restart the server scripts to reconnect with the WebSocket.
+2. The front-end client will automatically reconnect when the WebSocket server is not running.
 
 ### Running the Backend Client
 
@@ -54,7 +54,7 @@
     python3 Interface/Backend/Client/Client.py
     ```
 
-2. It will automatically reconnect when the WebSocket server is not running.
+2. The back-end will automatically reconnect when the WebSocket server is not running.
 
 
 
