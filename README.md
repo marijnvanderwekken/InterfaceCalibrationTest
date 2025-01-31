@@ -35,7 +35,7 @@
 
 1. Run the FastAPI server:
     ```sh
-    python3 Interface/Backend/FastApi/main.py
+    python3 Interface/Backend/Server/main.py
     ```
 
 ### Running the Frontend Client
@@ -51,7 +51,7 @@
 
 1. Run the Client.py:
     ```sh
-    python3 Interface/Backend/Client/Client.py
+    python3 Interface/Backend/Client/Client.py <1>
     ```
 
 2. It will automatically reconnect when the WebSocket server is not running.

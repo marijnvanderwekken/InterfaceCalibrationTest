@@ -4,17 +4,21 @@ import logging
 import json
 import base64
 import os
+import sys
 
 class WebSocketClient:
     def __init__(self):
-        self.clientId = "B1"
-        self.uri = f"ws://127.0.0.1:8000/ws/{self.clientId}"
+
+        
+
+        self.clientId = input("ID nr: ")
+        self.uri = f"ws://127.0.0.1:8000/ws/B{self.clientId}"
         self.response = None
         self.status = ""
         self.previous_status = ""
         self.command_dict = {}
         self.image = ImageHandler('Interface/Backend/Client/images', 6)
-        self.encoded_images = self.image.encode_images()
+        #self.encoded_images = self.image.encode_images()
         self.send_ready = False
 
     async def connect(self):
@@ -22,7 +26,7 @@ class WebSocketClient:
         while True:
             try:
                 async with websockets.connect(self.uri) as websocket:
-                    logging.info("Connected to WebSocket server")
+                    logging.info(f"Connected to WebSocket server, your ID is: B{self.clientId} ")
 
                     receive_task = asyncio.create_task(self.receive_message(websocket))
                     send_status_task = asyncio.create_task(self.send_status(websocket))
