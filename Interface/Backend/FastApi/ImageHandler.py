@@ -1,4 +1,5 @@
 
+
 from threading import Thread
 import logging
 import os
@@ -6,7 +7,6 @@ import base64
 import cv2
 import re
 import numpy as np
-
 
 class ImageHandler:
     def __init__(self):
