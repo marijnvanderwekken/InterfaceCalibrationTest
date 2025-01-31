@@ -51,7 +51,7 @@
 
 1. Run the Client.py:
     ```sh
-    python3 Interface/Backend/Client/Client.py <1>
+    python3 Interface/Backend/Client/Client.py
     ```
 
 2. It will automatically reconnect when the WebSocket server is not running.
