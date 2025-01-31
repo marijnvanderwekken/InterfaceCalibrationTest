@@ -30,7 +30,9 @@ class CommandHandler:
 
     async def send_images(self, data):
         combined_image = self.server.image_handler.prepare_image()
-        await self.server.send_message_to_client("F1", {
-            "type_message": "picture",
-            "data": combined_image
-        })
+        
+        for clientId in self.server.frontend_clients: 
+            await self.server.send_message_to_client(clientId, {
+                "type_message": "picture",
+                "data": combined_image
+            })

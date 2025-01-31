@@ -6,7 +6,6 @@ import logging
 import os
 import configparser
 from ImageHandler import ImageHandler
-
 from CommandHandler import CommandHandler 
 
 class WebSocketServer:
@@ -23,41 +22,38 @@ class WebSocketServer:
         self.app.websocket(self.websocket_path)(self.websocket_endpoint)
 
         self.image_handler = ImageHandler()
-        self.command_handler = CommandHandler(self)  # Initialize CommandHandler
+        self.command_handler = CommandHandler(self)
         self.status = ""
         self.previous_status = ""
-        self.clientId = ""
-
 
     async def websocket_endpoint(self, websocket: WebSocket, clientId: str):
         await websocket.accept()
-        self.clientId = clientId
-        # if clientId in self.frontend_clients or clientId in self.backend_clients:
-        #     await websocket.close()
-        #     logging.info(f"Client {clientId} already connected")
-        #     return
 
-        if self.clientId .startswith("F"):
-            self.frontend_clients[self.clientId ] = websocket
-        elif self.clientId .startswith("B"):
-            self.backend_clients[self.clientId ] = websocket
+
+        if clientId.startswith("F"):
+            self.frontend_clients[clientId] = websocket
+        elif clientId.startswith("B"):
+            self.backend_clients[clientId] = websocket
         else:
-            logging.info(f"Invalid Client ID: {self.clientId }")
+            logging.info(f"Invalid Client ID: {clientId}")
+            await websocket.close()
             return
 
-        logging.info(f"Client {self.clientId } connected")
+        logging.info(f"Client {clientId} connected")
 
         try:
             while True:
                 message = await websocket.receive_text()
-                logging.info(f"Received message from {self.clientId }: {message}")
+                logging.info(f"Received message from {clientId}: {message}")
 
                 try:
                     data = json.loads(message)
                 except json.JSONDecodeError:
-                    logging.error("Received invalid JSON message")
+                    logging.error(f"Received invalid JSON message from {clientId}")
                     continue
+
                 message_type = data.get("type_message", "")
+
                 if message_type == "command":
                     command = data.get("data", "")
                     await self.command_handler.execute_command(command, data)
@@ -66,24 +62,24 @@ class WebSocketServer:
                     if self.status != self.previous_status:
                         await self.broadcast_status(self.status)
                         self.previous_status = self.status
-          
+
         except WebSocketDisconnect:
-            logging.info(f"Client {self.clientId } disconnected")
-            self.remove_client(self.clientId )
+            logging.info(f"Client {clientId} disconnected")
+            self.remove_client(clientId)
         except Exception as e:
-            logging.error(f"WebSocket Error: {e}")
-            self.remove_client(self.clientId )
+            logging.error(f"WebSocket Error with {clientId}: {e}")
+            self.remove_client(clientId)
 
     async def broadcast_status(self, status: str):
-        for self.clientId  in self.frontend_clients:
-            await self.send_message_to_client(self.clientId , {
+        for clientId in self.frontend_clients:
+            await self.send_message_to_client(clientId, {
                 "type_message": "status",
                 "data": status
             })
 
     async def broadcast_to_backends(self, command: str):
-        for self.clientId  in self.backend_clients:
-            await self.send_message_to_client(self.clientId , {
+        for clientId in self.backend_clients:
+            await self.send_message_to_client(clientId, {
                 "type_message": "command",
                 "data": command
             })
@@ -99,11 +95,9 @@ class WebSocketServer:
 
     async def send_message_to_client(self, clientId: str, message: dict):
         json_message = json.dumps(message)
-        if self.clientId  in self.frontend_clients:
+        if clientId in self.frontend_clients:
             await self.frontend_clients[clientId].send_text(json_message)
-        elif self.clientId  in self.backend_clients:
+        elif clientId in self.backend_clients:
             await self.backend_clients[clientId].send_text(json_message)
         else:
             logging.warning(f"Attempted to send message to non-existent client: {clientId}")
-
-
