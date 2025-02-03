@@ -17,7 +17,7 @@ import time
 from sendStatus import update_status
 
 class Calibration:
-
+    
     def validate_ip(self,ip):
         pattern = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"
         return bool(re.match(pattern, ip))

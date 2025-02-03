@@ -61,7 +61,7 @@ class WebSocketClient:
     def send_status(self, ws):
         while True:
             current_status = get_status()
-            if current_status != self.previous_status and current_status is not " ":
+            if current_status != self.previous_status and current_status != " ":
                 ws.send(json.dumps({"type_message": "status", "data": current_status}))
                 logging.info(f"Sent status: {current_status}")
                 self.previous_status = current_status

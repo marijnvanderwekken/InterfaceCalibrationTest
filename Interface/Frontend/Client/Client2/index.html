@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client 2</title>
+    <title>Client 1</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { padding: 20px; }
@@ -16,56 +16,51 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center">Client 2</h1>
+        <h1 class="text-center">Client 1</h1>
         <div class="row">
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-body">
                         <h3>Status Backend:</h3>
                         <div id="output" class="border p-3"></div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body">
-                        <h3>Combined Image:</h3>
-                        <div id="imgContainer" class="img-container">
-                            <img id="combinedImage" src="" alt="Combined Image">
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h3>Status Frontend:</h3>
+                        <div class="card-body">
+                            <h3>Combined Image:</h3>
+                            <div id="imgContainer" class="img-container">
+                                <img id="combinedImage" src="" alt="Combined Image">
+                            </div>
+                            <h3>Status Frontend:</h3>
+                        <div id="status" class="border p-3"></div>
+                        <h3>Message to WebSocket:</h3>
+                            <input type="text" id="message" name="message" class="form-control" placeholder="Enter message">
+                            <button class="btn custom-btn" onclick="sendMessageToServer(document.getElementById('message').value)">Send Message</button>
+                            <h3>Status Frontend:</h3>
                         <div id="status" class="border p-3"></div>
                     </div>
-                </div>
-                <div class="card">
-                    <div class="card-body">
-                        <h3>Message to WebSocket:</h3>
-                        <div class="input-group mb-3">
-                            <input type="text" id="message" name="message" class="form-control" placeholder="Enter message">
-                            <div class="input-group-append">
-                                <button class="btn custom-btn" onclick="sendMessageToServer(document.getElementById('message').value)">Send Message</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+               
+            <div class="col-md-6">
+          
+                
+    
 
         <div class="card">
             <div class="card-body text-center">
-                <button class="btn custom-btn m-2" onclick="sendMessageToServer('B_end_start_calibration',false)">Start Calibration</button>
-                <button class="btn custom-btn m-2" onclick="sendMessageToServer('B_end_stop_calibration')">Stop Calibration</button>
-                <button class="btn custom-btn m-2" onclick="sendMessageToServer('B_end_pause_calibration')">Pause Calibration</button>
-                <button class="btn custom-btn m-2" onclick="sendMessageToServer('B_end_send_images')">Receive combined image</button>
-        
-
+                <h2>Calibration</h2>
+                <label for="machine_config">Choose a machine config:</label>
+                <select name="machine_config" id="machine_config">
+                    <option value="" disabled selected>Select a config</option>
+                    <option value="90">90 mm</option>
+                    <option value="63">63 mm</option>
+                </select> 
+                <h6>Main ip-address:</h6>
+                <input type="text" id="main_ip" name="main_ip" placeholder="Enter main ip">
+                <h6>Number of machines:</h6>
+                <input type="text" id="number_of_pcs" name="number_of_pcs" placeholder="Enter number of machines">
+                <h1></h1>
+                <button class="btn custom-btn m-2" onclick="startCalibration()">Start Calibration</button>
             </div>
-        </div>
     </div>
+
+
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
@@ -73,3 +68,4 @@
     <script src="ReceiveData.js"></script>
 </body>
 </html>
+
