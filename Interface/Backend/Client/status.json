@@ -1,7 +1,4 @@
 {
-    "type_message": "status",
-    "message": "message",
-    "has_data": true,
+    "type_message": "status", 
     "data": ""
-
 }

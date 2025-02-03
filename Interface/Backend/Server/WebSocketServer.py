@@ -57,6 +57,7 @@ class WebSocketServer:
                 if message_type == "command":
                     command = data.get("data", "")
                     await self.command_handler.execute_command(command, data)
+
                 elif message_type == "status":
                     self.status = data.get("data", "")
                     if self.status != self.previous_status:
