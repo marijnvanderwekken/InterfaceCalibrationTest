@@ -1,17 +1,14 @@
-import asyncio
-import websockets
+import threading
+import websocket
 import logging
 import json
 import base64
 import os
-import sys
-from sendStatus import get_status
+import time
+from sendStatus import get_status, update_status
 from SimulateCalibration.Simulate import Calibration
 class WebSocketClient:
     def __init__(self):
-
-        
-
         self.clientId = input("ID nr: ")
         self.uri = f"ws://127.0.0.1:8000/ws/B{self.clientId}"
         self.response = None
@@ -19,73 +16,68 @@ class WebSocketClient:
         self.previous_status = ""
         self.command_dict = {}
         self.image = ImageHandler('Interface/Backend/Client/images', 6)
-        #self.encoded_images = self.image.encode_images()
-        self.send_ready = False 
-        self.calibration_config = ""
-    async def connect(self):
-        
+        self.send_ready = False
+        self.ws = None
+
+    def connect(self):
         while True:
             try:
-                async with websockets.connect(self.uri) as websocket:
-                    logging.info(f"Connected to WebSocket server, your ID is: B{self.clientId} ")
-
-                    receive_task = asyncio.create_task(self.receive_message(websocket))
-                    send_status_task = asyncio.create_task(self.send_status(websocket))
-                    send_image_task = asyncio.create_task(self.send_image(websocket))
-
-                    await asyncio.gather(receive_task, send_status_task, send_image_task)
-
+                self.ws = websocket.WebSocketApp(self.uri,
+                                                 on_message=self.on_message,
+                                                 on_error=self.on_error,
+                                                 on_close=self.on_close)
+                self.ws.on_open = self.on_open
+                self.ws.run_forever()
             except Exception as e:
                 logging.error(f"Connection error: {e}")
                 logging.error("Reconnecting in 5 seconds...")
-                await asyncio.sleep(5) 
+                time.sleep(5)
 
-    async def send_status(self, websocket):
-            while True:
-                if self.status != self.previous_status:
-                    message_data = {
-                        "type_message": "status",
-                        "data": self.status
-                    }
-                    await websocket.send(json.dumps(message_data))  
-                    logging.info(f"Sent status: {self.status}")
-                    self.previous_status = self.status
-                await asyncio.sleep(1)
+    def on_message(self, ws, message):
+        logging.info(f"Received message: {message}")
+        try:
+            command_data = json.loads(message)
+            command = command_data.get("message", "").strip()
+            data = command_data.get("data", "").strip()
+            logging.info(f"Executing command: {command} with data: {data}")
+            if command in self.command_dict:
+                self.command_dict[command](data)
+            else:
+                logging.warning(f"Unknown command: {command}")
+        except json.JSONDecodeError:
+            logging.warning("Received non-JSON message, ignoring...")
 
-    async def send_image(self, websocket):
+    def on_error(self, ws, error):
+        logging.error(f"WebSocket error: {error}")
+
+    def on_close(self, ws, close_status_code, close_msg):
+        logging.info("Connection closed")
+
+    def on_open(self, ws):
+        logging.info(f"Connected to WebSocket server, your ID is: B{self.clientId}")
+        threading.Thread(target=self.send_status, args=(ws,)).start()
+        threading.Thread(target=self.send_image, args=(ws,)).start()
+
+    def send_status(self, ws):
+        while True:
+            current_status = get_status()
+            if current_status != self.previous_status and current_status is not " ":
+                ws.send(json.dumps({"type_message": "status", "data": current_status}))
+                logging.info(f"Sent status: {current_status}")
+                self.previous_status = current_status
+            time.sleep(1)
+
+    def send_image(self, ws):
         while True:
             if self.send_ready:
                 message_data = {
                     "type_message": "get_image",
-                    "data": self.encoded_images
+                    "data": self.image.encode_images()
                 }
-                await websocket.send(json.dumps(message_data)) 
+                ws.send(json.dumps(message_data))
                 logging.info("Sent image list")
                 self.send_ready = False
-            await asyncio.sleep(1)
-    
-    
-    async def receive_message(self, websocket):
-        while True:
-            try:
-                self.response = await websocket.recv()
-                logging.info(f"Received message: {self.response}")
-                try:
-                    command_data = json.loads(self.response)
-                    command = command_data.get("message", "").strip()
-                    data = command_data.get("data", "").strip()
-                    logging.info(f"Executing command: {command} with data: {data}")
-                    if command in self.command_dict:
-                        await self.command_dict[command](data)
-                    else:
-                        logging.warning(f"Unknown command: {command}")
-                except json.JSONDecodeError:
-                    logging.warning("Received non-JSON message, ignoring...")
-            except websockets.ConnectionClosed:
-                logging.info("Connection closed")
-                break
-            
-
+            time.sleep(1)
 
 class ImageHandler:
     def __init__(self, image_path, num_of_cams):
@@ -110,26 +102,26 @@ class ImageHandler:
             logging.error(f"Unexpected error: {e}")
         return encoded_images
 
-
 class Calibration_command:
     def __init__(self, client: WebSocketClient):
         self.client = client
         self.client.command_dict = { 
+            "B_end_set_machine_config": self.set_machine_config,
             "B_end_start_calibration": self.start_calibration,
+            "B_end_stop_calibration": self.stop_calibration,
+            "B_end_pause_calibration": self.pause_calibration,
             "B_end_send_images": self.send_images
         }
-
         self.calibration_config = ""
         self.machine_config_ip = ""
         self.machine_config_num_machines = ""
         self.machine_config_machine_config = ""
 
-
-
-    async def start_calibration(self,data):
-        self.client.status = "Started calibration"
+    def set_machine_config(self, data):
         try:
-  
+            if not isinstance(data, str):
+                raise ValueError("Expected a JSON string but got a different type")
+
             logging.info(f"Received machine config data: {data}") 
 
             self.calibration_config = json.loads(data)
@@ -153,21 +145,28 @@ class Calibration_command:
             logging.error(f"Received invalid JSON in machine config from {self.client.clientId}: {e}")
         except ValueError as e:
             logging.error(f"ValueError in set_machine_config: {e}")
-        
-        first_calibration.main_calibration(self.machine_config_ip, self.machine_config_num_machines, self.machine_config_machine_config)
 
+    def start_calibration(self, data):
+        self.client.status = "Start calibration"
+        self.set_machine_config(data)
+        calibration_thread = threading.Thread(target=first_calibration.main_calibration, args=(self.machine_config_ip, self.machine_config_num_machines, self.machine_config_machine_config), daemon=True)
+        calibration_thread.start()
 
-    async def send_images(self, data):
+    def stop_calibration(self, data):
+        self.client.status = "Stop calibration"
+
+    def pause_calibration(self, data):
+        self.client.status = "Pause calibration"
+
+    def send_images(self, data):
         self.client.status = "Sending images"
         self.client.send_ready = True
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     wsc = WebSocketClient()
-    CalibrationProcess = Calibration_command(wsc)  
+    CalibrationProcess = Calibration_command(wsc)
 
     first_calibration = Calibration()
 
-    loop = asyncio.get_event_loop()
-    loop.create_task(wsc.connect()) 
-    loop.run_forever()
+    threading.Thread(target=wsc.connect).start()

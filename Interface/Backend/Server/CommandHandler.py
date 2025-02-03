@@ -8,8 +8,7 @@ class CommandHandler:
             "B_end_start_calibration": self.start_calibration,
             "B_end_stop_calibration": self.stop_calibration,
             "B_end_pause_calibration": self.pause_calibration,
-            "B_end_send_images": self.send_images,
-            "B_end_set_machine_config": self.send_machine_config
+            "B_end_send_images": self.send_images
         }
 
     async def execute_command(self,message: str,data: str):

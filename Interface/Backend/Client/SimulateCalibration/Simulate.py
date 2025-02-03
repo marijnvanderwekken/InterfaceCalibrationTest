@@ -184,10 +184,10 @@ class Calibration:
         update_status("Simulation complete. All steps executed.")
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    fist_calibration = Calibration()
+# if __name__ == "__main__":
+#     logging.basicConfig(level=logging.INFO)
+#     fist_calibration = Calibration()
 
-    calibration_thread = Thread(target=fist_calibration.main_calibration(), daemon=True)
-    calibration_thread.start()
-    calibration_thread.join()
+#     calibration_thread = Thread(target=fist_calibration.main_calibration(), daemon=True)
+#     calibration_thread.start()
+#     calibration_thread.join()
