@@ -69,3 +69,41 @@ class ImageHandler:
         cv2.imwrite(combined_image_path, combined_image)
         logging.info(f"Saved combined image as {combined_image_path}")
         return combined_image_path
+    
+    def combine_images_from_folder(self):
+        folder_path = os.getcwd() + ""
+
+        if os.path.exists(folder_path):
+            all_files = os.listdir(folder_path)
+            pattern = r'cam\d+_output\.jpg'
+            image_files = [file for file in all_files if re.match(pattern, file)]
+            num_images = len(image_files)
+            print(f'Total number of images matching the pattern: {num_images}')
+        else:
+            print('The specified directory does not exist.')
+
+        images = []
+
+        for i in range(0, num_images):
+            image_name = f'cam{i}_output.jpg'
+            image_path = os.path.join(folder_path, image_name)
+
+            if os.path.exists(image_path):
+                img = cv2.imread(image_path)
+                images.append(img)
+
+        height, width, _ = images[0].shape
+        combined_image = np.zeros((height, (width + 1) * num_images - 1, 3), dtype=np.uint8)
+
+        for i, img in enumerate(images):
+            combined_image[:, i * (width + 1):i * (width + 1) + width, :] = img
+
+        for i in range(1, num_images):
+            cv2.line(combined_image, (i * (width + 1) - 1, 0), (i * (width + 1) - 1, height), (255, 255, 255), 5)
+
+        combined_image_path = os.path.join(folder_path, 'combined_image.jpg')
+        cv2.putText(combined_image, f'Calibrated Center Y Line: {437} mm', (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+        cv2.imwrite(combined_image_path, combined_image)
+        print("Combined image saved as 'combined_image.jpg' in the same folder.")
+        

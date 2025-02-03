@@ -25,11 +25,9 @@ class WebSocketServer:
         self.command_handler = CommandHandler(self)
         self.status = ""
         self.previous_status = ""
-
+        self.machine_config = ""
     async def websocket_endpoint(self, websocket: WebSocket, clientId: str):
         await websocket.accept()
-
-
         if clientId.startswith("F"):
             self.frontend_clients[clientId] = websocket
         elif clientId.startswith("B"):
@@ -38,32 +36,28 @@ class WebSocketServer:
             logging.info(f"Invalid Client ID: {clientId}")
             await websocket.close()
             return
-
         logging.info(f"Client {clientId} connected")
 
         try:
             while True:
                 message = await websocket.receive_text()
                 logging.info(f"Received message from {clientId}: {message}")
-
                 try:
                     data = json.loads(message)
                 except json.JSONDecodeError:
                     logging.error(f"Received invalid JSON message from {clientId}")
                     continue
-
                 message_type = data.get("type_message", "")
-
                 if message_type == "command":
-                    command = data.get("data", "")
-                    await self.command_handler.execute_command(command, data)
+                    message = data.get("message", "")
+                    data = data.get("data", "")
+                    await self.command_handler.execute_command(message,data)
 
                 elif message_type == "status":
                     self.status = data.get("data", "")
                     if self.status != self.previous_status:
                         await self.broadcast_status(self.status)
-                        self.previous_status = self.status
-
+    
         except WebSocketDisconnect:
             logging.info(f"Client {clientId} disconnected")
             self.remove_client(clientId)
@@ -78,11 +72,12 @@ class WebSocketServer:
                 "data": status
             })
 
-    async def broadcast_to_backends(self, command: str):
+    async def broadcast_to_backends(self, message: str, data: str):
         for clientId in self.backend_clients:
             await self.send_message_to_client(clientId, {
                 "type_message": "command",
-                "data": command
+                "message" : message,
+                "data": data
             })
 
     def remove_client(self, clientId: str):
