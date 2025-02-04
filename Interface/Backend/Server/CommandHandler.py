@@ -8,7 +8,8 @@ class CommandHandler:
             "B_end_start_calibration": self.start_calibration,
             "B_end_stop_calibration": self.stop_calibration,
             "B_end_pause_calibration": self.pause_calibration,
-            "B_end_send_images": self.send_images
+            "B_end_send_images": self.send_images,
+            "B_end_initialize_machine": self.initialize_machine
         }
 
     async def execute_command(self,message: str,data: str):
@@ -17,6 +18,8 @@ class CommandHandler:
             await self.commands[message](data)
         else:
             logging.warning(f"Unknown command received: {message}")
+    async def initialize_machine(self,data):
+        await self.server.broadcast_to_backends("B_end_initialize_machine","None")
 
     async def start_calibration(self,data):
             await self.server.broadcast_to_backends("B_end_start_calibration",data)   

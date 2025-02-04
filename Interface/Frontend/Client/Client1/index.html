@@ -8,12 +8,18 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script src="ReceiveData.js"></script>
+    <link rel="icon" type="image/x-icon" href="https://flikweertvision.nl/wp-content/uploads/2023/05/cropped-cropped-favicon-32x32.png">
     <style>
-        .btn.btn-primary.m-2 {
+         .btn.btn-primary.m-2 {
             background-color: #2e5426;
         }
-
-        
+        .pc-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -21,106 +27,36 @@
 <div class="container">
     <h2>Calibration Tool</h2>
 
-    <ul class="nav nav-tabs">
+    <ul class="nav nav-tabs" id="machineTabs">
         <li class="active"><a data-toggle="tab" href="#start">Start</a></li>
-        <li><a data-toggle="tab" href="#machine1">Machine 1</a></li>
-        <li><a data-toggle="tab" href="#machine2">Machine 2</a></li>
     </ul>
 
-    <div class="tab-content">
-        <!-- Start Tab -->
+    <div class="tab-content" id="tabContent">
         <div id="start" class="tab-pane fade in active">
+
+            <div style="border: 1px solid #ddd; padding: 10px;margin-top: 20px; width: 40%; ">
+                <h4>Status calibration:</h4>
+                <div id="output" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%; "></div>
+            </div>
+
+            <div style="border: 1px solid #ddd; padding: 10px;margin-top: 20px; width: 40%;">
             <h4>Status Frontend:</h4>
-            <div id="status" class="border p-3"></div>
-
-            <h4>Status calibration:</h4>
-            <div id="output" class="border p-3"></div>
-
-            <h4>Choose machine config:</h4>
-            <label for="machine_config">Machine Config:</label>
-            <select name="machine_config" id="machine_config">
-                <option value="63">63 mm</option>
-                <option value="90">90 mm</option>
-            </select>
-
+            <div id="status" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%;"></div>
+            </div>
+            
+        <div style="border: 1px solid #ddd; padding: 10px;margin-top: 20px; width: 40%;">
             <h4>Config:</h4>
-            <div id="config" class="border p-3"></div>
-
-            <button class="btn btn-primary m-2" onclick="readMachines()">Read machines</button>
+            <div id="config" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%; "></div>
         </div>
 
-        <!-- Machine 1 Tab -->
-        <div id="machine1" class="tab-pane fade">
-            <div id="contentBox1" style="margin:0px auto; width:70%"></div>
-
-            <div class="column">
-                <h3>Pc1</h3>
-                <h5>Status:</h5>
-                <div id="output1_machine1" class="border p-3"></div>
-                <h5>Pc 1 Image:</h5>
-                <div class="img-container">
-                    <img id="pc1image_machine1" src="" alt="Pc 1 Image">
-                </div>
-            </div>
-
-            <div class="column">
-                <h3>Pc2</h3>
-                <h5>Status:</h5>
-                <div id="output2_machine1" class="border p-3"></div>
-                <h5>Pc 2 Image:</h5>
-                <div class="img-container">
-                    <img id="pc2image_machine1" src="" alt="Pc 2 Image">
-                </div>
-            </div>
-
-            <div class="column">
-                <h3>Pc3</h3>
-                <h5>Status:</h5>
-                <div id="output3_machine1" class="border p-3"></div>
-                <h5>Pc 3 Image:</h5>
-                <div class="img-container">
-                    <img id="pc3image_machine1" src="" alt="Pc 3 Image">
-                </div>
-            </div>
-        </div>
-
-        <!-- Machine 2 Tab -->
-        <div id="machine2" class="tab-pane fade">
-            <div id="contentBox2" style="margin:0px auto; width:70%"></div>
-
-            <div class="column">
-                <h3>Pc1</h3>
-                <h5>Status:</h5>
-                <div id="output1_machine2" class="border p-3"></div>
-                <h5>Pc 1 Image:</h5>
-                <div class="img-container">
-                    <img id="pc1image_machine2" src="" alt="Pc 1 Image">
-                </div>
-            </div>
-
-            <div class="column">
-                <h3>Pc2</h3>
-                <h5>Status:</h5>
-                <div id="output2_machine2" class="border p-3"></div>
-                <h5>Pc 2 Image:</h5>
-                <div class="img-container">
-                    <img id="pc2image_machine2" src="" alt="Pc 2 Image">
-                </div>
-            </div>
-
-            <div class="column">
-                <h3>Pc3</h3>
-                <h5>Status:</h5>
-                <div id="output3_machine2" class="border p-3"></div>
-                <h5>Pc 3 Image:</h5>
-                <div class="img-container">
-                    <img id="pc3image_machine2" src="" alt="Pc 3 Image">
-                </div>
-            </div>
+            <button class="btn btn-primary m-2" onclick="initialize_machine()">Initialize machine</button>
         </div>
     </div>
 </div>
 
-<script src="ReceiveData.js"></script>
+<script>
+
+</script>
+
 </body>
 </html>

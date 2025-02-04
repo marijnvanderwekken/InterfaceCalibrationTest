@@ -119,7 +119,8 @@ class Calibration_command:
         self.client = client
         self.client.command_dict = { 
             "B_end_start_calibration": self.start_calibration,
-            "B_end_stop_calibration": self.stop_calibration
+            "B_end_stop_calibration": self.stop_calibration,
+            "B_end_initialize_machine": self.initialize_machine
         }
         self.machine_config = {}
 
@@ -133,7 +134,6 @@ class Calibration_command:
             return f"No config error {e}"
 
     def start_calibration(self, data):
-        self.client.send_config(self.read_hardware_configuration())
         first_calibration = Calibration()
         self.client.status = "Start calibration"
         calibration_thread = threading.Thread(target=first_calibration.main_calibration, args=("none","none","none")) #ip -> numb_machines -> machine_config?, daemon=True)
@@ -143,6 +143,9 @@ class Calibration_command:
     def stop_calibration(self, data):
         self.client.status = "Stop calibration"
 
+    def initialize_machine(self,data):
+        self.client.send_config(self.read_hardware_configuration())
+        
 
 
 
