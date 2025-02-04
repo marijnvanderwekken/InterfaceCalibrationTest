@@ -59,6 +59,10 @@ class Calibration:
 
 
     def main_calibration(self,ip_addres,number_pc,machine_config):
+        ip_addres = "1.1.1.1"
+        number_pc = 2
+        machine_config = 63
+
         wd = Path.cwd() / "utilities"
 
         update_status(f"Starting calibration with ip: {ip_addres}" f" and with {number_pc} numper of pcs "  f"And with machine config: {machine_config}")
@@ -182,7 +186,6 @@ class Calibration:
             update_status(" Error: PDF file could not be copied.")
 
         update_status("Simulation complete. All steps executed.")
-
 
 # if __name__ == "__main__":
 #     logging.basicConfig(level=logging.INFO)

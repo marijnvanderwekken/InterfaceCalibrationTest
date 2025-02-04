@@ -16,7 +16,8 @@ class WebSocketClient:
         self.previous_status = ""
         self.command_dict = {}
         self.image = ImageHandler('Interface/Backend/Client/images', 6)
-        self.send_ready = False
+        self.send_image_ready = False
+        self.send_config_ready = False
         self.ws = None
 
     def connect(self):
@@ -56,10 +57,9 @@ class WebSocketClient:
     def on_open(self, ws):
         logging.info(f"Connected to WebSocket server, your ID is: B{self.clientId}")
         threading.Thread(target=self.send_status, args=(ws,)).start()
-        threading.Thread(target=self.send_image, args=(ws,)).start()
 
     def send_status(self, ws):
-        while True:
+        while ws.keep_running:
             current_status = get_status()
             if current_status != self.previous_status and current_status != " ":
                 ws.send(json.dumps({"type_message": "status", "data": current_status}))
@@ -67,17 +67,29 @@ class WebSocketClient:
                 self.previous_status = current_status
             time.sleep(1)
 
-    def send_image(self, ws):
-        while True:
-            if self.send_ready:
-                message_data = {
-                    "type_message": "get_image",
-                    "data": self.image.encode_images()
-                }
-                ws.send(json.dumps(message_data))
-                logging.info("Sent image list")
-                self.send_ready = False
-            time.sleep(1)
+    def send_config(self, config):
+        if self.ws and self.ws.keep_running:
+            message_data = {
+                "type_message": "config",
+                "data": config
+            }
+            self.ws.send(json.dumps(message_data))
+            logging.info("Sent machine config")
+        else:
+            logging.info("Cannot send machine config, WebSocket is not running")
+
+    def send_image(self):
+        if self.ws and self.ws.keep_running:
+            message_data = {
+            "type_message": "get_image",
+            "data": self.image.encode_images()
+        }
+            self.ws.send(json.dumps(message_data))
+            logging.info("Sent machine config")
+        else:
+            logging.info("Cannot send machine config, WebSocket is not running")
+
+
 
 class ImageHandler:
     def __init__(self, image_path, num_of_cams):
@@ -88,7 +100,7 @@ class ImageHandler:
         encoded_images = []
         try:
             for index in range(self.num_of_cams):
-                image_file = os.path.join(self.image_path, f"cam{index}.jpg")
+                image_file = os.path.join(os.getcwd(), f"utilities/cam{index}.jpg")
                 try:
                     with open(image_file, "rb") as img:
                         encoded_string = base64.b64encode(img.read()).decode('utf-8')
@@ -106,67 +118,39 @@ class Calibration_command:
     def __init__(self, client: WebSocketClient):
         self.client = client
         self.client.command_dict = { 
-            "B_end_set_machine_config": self.set_machine_config,
             "B_end_start_calibration": self.start_calibration,
-            "B_end_stop_calibration": self.stop_calibration,
-            "B_end_pause_calibration": self.pause_calibration,
-            "B_end_send_images": self.send_images
+            "B_end_stop_calibration": self.stop_calibration
         }
-        self.calibration_config = ""
-        self.machine_config_ip = ""
-        self.machine_config_num_machines = ""
-        self.machine_config_machine_config = ""
+        self.machine_config = {}
 
-    def set_machine_config(self, data):
+    def read_hardware_configuration(self):
         try:
-            if not isinstance(data, str):
-                raise ValueError("Expected a JSON string but got a different type")
-
-            logging.info(f"Received machine config data: {data}") 
-
-            self.calibration_config = json.loads(data)
-
-            self.machine_config_ip = self.calibration_config.get("main_ip", "")
-            self.machine_config_num_machines = self.calibration_config.get("number_of_pcs", 1)
-            self.machine_config_machine_config = self.calibration_config.get("machine_config", "")
-
-            if not isinstance(self.machine_config_num_machines, int):
-                try:
-                    self.machine_config_num_machines = int(self.machine_config_num_machines)
-                except ValueError:
-                    logging.error(f"Invalid number_of_pcs value: {self.machine_config_num_machines}")
-                    self.machine_config_num_machines = 1
-
-            logging.info(f"Machine config is set to: {self.machine_config_machine_config}, "
-                         f"machine ip is set to: {self.machine_config_ip}, "
-                         f"numbers of pc's set to {self.machine_config_num_machines}")
-
-        except json.JSONDecodeError as e:
-            logging.error(f"Received invalid JSON in machine config from {self.client.clientId}: {e}")
-        except ValueError as e:
-            logging.error(f"ValueError in set_machine_config: {e}")
+            config_path = os.path.abspath(os.path.join(os.getcwd(), 'machine.json'))
+            with open(config_path) as json_data:
+                self.machine_config = json.load(json_data)
+            return self.machine_config
+        except Exception as e:
+            return f"No config error {e}"
 
     def start_calibration(self, data):
+        self.client.send_config(self.read_hardware_configuration())
+        first_calibration = Calibration()
         self.client.status = "Start calibration"
-        self.set_machine_config(data)
-        calibration_thread = threading.Thread(target=first_calibration.main_calibration, args=(self.machine_config_ip, self.machine_config_num_machines, self.machine_config_machine_config), daemon=True)
+        calibration_thread = threading.Thread(target=first_calibration.main_calibration, args=("none","none","none")) #ip -> numb_machines -> machine_config?, daemon=True)
         calibration_thread.start()
+        self.client.send_image()
 
     def stop_calibration(self, data):
         self.client.status = "Stop calibration"
 
-    def pause_calibration(self, data):
-        self.client.status = "Pause calibration"
 
-    def send_images(self, data):
-        self.client.status = "Sending images"
-        self.client.send_ready = True
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     wsc = WebSocketClient()
     CalibrationProcess = Calibration_command(wsc)
-
-    first_calibration = Calibration()
+    CalibrationProcess.read_hardware_configuration()
+    
 
     threading.Thread(target=wsc.connect).start()

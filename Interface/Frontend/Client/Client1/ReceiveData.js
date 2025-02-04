@@ -17,11 +17,31 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Message from server:" + event.data);
             try {
                 const message = JSON.parse(event.data);
-                if (message.type_message === "picture") {
-                    displayImage(message.data)
-                }else if(message.type_message == "status"){
+                if(message.type_message == "status"){
                     const output = document.getElementById("output");
                     output.textContent = message.data;
+                }
+                else if (message.type_message == "config") {
+                    console.log("Config message received:", message.data);
+
+                    const config = document.getElementById("config");
+                    if (config) {
+                        let configText = '';
+                        let numb_of_machines = 0;
+                        for (const key in message.data) {
+                            if (message.data.hasOwnProperty(key)) {
+                                numb_of_machines++;
+                                const machine = message.data[key];
+                                configText += `Machine ID: ${machine.machine_id}, Number of PCs: ${machine.numb_of_pcs}\n`;
+                            }
+                        }
+                        config.textContent = `${configText}number of machines in total: ${numb_of_machines}`;
+                    } else {
+                        console.error("Element with ID 'config' not found");
+                    }
+                }
+                else if (message.type_message == "picture") {
+                displayImage(message.data);
                 }
             } catch (e) {
                 console.error("Error parsing message:", e);
@@ -37,28 +57,11 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(connectWebSocket, 5000);
         };
     }
-    function startCalibration() {
-        const mainIp = document.getElementById("main_ip").value;
-        const numMachines = document.getElementById("number_of_pcs").value;
-        const machineConfig = document.getElementById("machine_config").value;
-
-        if (isValidIP(mainIp)) {
-            const machineConfigData = {
-                main_ip: mainIp,
-                number_of_pcs: numMachines,
-                machine_config: machineConfig
-            };
-
-            //sendMessageToServer("command", "B_end_set_machine_config", JSON.stringify(machineConfigData));
-            sendMessageToServer("command", "B_end_start_calibration", JSON.stringify(machineConfigData));
-
-            document.getElementById("machine_config").selectedIndex = 0;
-            document.getElementById("main_ip").value = "";
-            document.getElementById("number_of_pcs").value = "";
-            console.log("Calibration started and inputs reset.");
-        } else {
-            window.alert("IP is not valid");
-        }
+    function startCalibration(machine_id) {
+        sendMessageToServer("command", "B_end_start_calibration");
+    }
+    function readMachines(){
+        sendMessageToServer("command", "B_end_read_machines");
     }
 
         
@@ -113,5 +116,6 @@ document.addEventListener("DOMContentLoaded", () => {
     window.sendMessageToServer = sendMessageToServer;
     window.sendStatusUpdate = sendStatusUpdate;
     window.startCalibration = startCalibration;
+    window.readMachines = readMachines;
     connectWebSocket(); 
 });

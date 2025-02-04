@@ -24,8 +24,10 @@ class WebSocketServer:
         self.image_handler = ImageHandler()
         self.command_handler = CommandHandler(self)
         self.status = ""
-        self.previous_status = ""
         self.machine_config = ""
+        self.previous_machine_config = ""
+        self.previous_status = ""
+
     async def websocket_endpoint(self, websocket: WebSocket, clientId: str):
         await websocket.accept()
         if clientId.startswith("F"):
@@ -57,7 +59,12 @@ class WebSocketServer:
                     self.status = data.get("data", "")
                     if self.status != self.previous_status:
                         await self.broadcast_status(self.status)
-    
+
+                elif message_type == "config":
+                    self.machine_config = data.get("data", "")
+                    if self.config != self.previous_machine_config:
+                        await self.broadcast_config(self.machine_config)
+                    
         except WebSocketDisconnect:
             logging.info(f"Client {clientId} disconnected")
             self.remove_client(clientId)
@@ -70,6 +77,13 @@ class WebSocketServer:
             await self.send_message_to_client(clientId, {
                 "type_message": "status",
                 "data": status
+            })
+
+    async def broadcast_config(self, config: str):
+        for clientId in self.frontend_clients:
+            await self.send_message_to_client(clientId, {
+                "type_message": "config",
+                "data": config
             })
 
     async def broadcast_to_backends(self, message: str, data: str):

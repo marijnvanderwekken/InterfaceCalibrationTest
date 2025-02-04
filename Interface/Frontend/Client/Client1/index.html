@@ -1,86 +1,126 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client 1</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <style>
-        body { padding: 20px; }
-        .button { color: white; background-color: #2e5426; cursor: pointer; }
-        .card { margin-top: 20px; }
-        .custom-btn { background-color: #2e5426; color: white; }
-        .img-container { max-width: 300px; max-height: 300px; overflow: hidden; border: 1px solid #ddd; }
-        .img-container img { width: 100%; height: auto; object-fit: cover; }
+        .btn.btn-primary.m-2 {
+            background-color: #2e5426;
+        }
+
+        
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="text-center">Client 1</h1>
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h3>Status Backend:</h3>
-                        <div id="output" class="border p-3"></div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body">
-                        <h3>Combined Image:</h3>
-                        <div id="imgContainer" class="img-container">
-                            <img id="combinedImage" src="" alt="Combined Image">
-                        </div>
-                    </div>
+
+<div class="container">
+    <h2>Calibration Tool</h2>
+
+    <ul class="nav nav-tabs">
+        <li class="active"><a data-toggle="tab" href="#start">Start</a></li>
+        <li><a data-toggle="tab" href="#machine1">Machine 1</a></li>
+        <li><a data-toggle="tab" href="#machine2">Machine 2</a></li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Start Tab -->
+        <div id="start" class="tab-pane fade in active">
+            <h4>Status Frontend:</h4>
+            <div id="status" class="border p-3"></div>
+
+            <h4>Status calibration:</h4>
+            <div id="output" class="border p-3"></div>
+
+            <h4>Choose machine config:</h4>
+            <label for="machine_config">Machine Config:</label>
+            <select name="machine_config" id="machine_config">
+                <option value="63">63 mm</option>
+                <option value="90">90 mm</option>
+            </select>
+
+            <h4>Config:</h4>
+            <div id="config" class="border p-3"></div>
+
+            <button class="btn btn-primary m-2" onclick="readMachines()">Read machines</button>
+        </div>
+
+        <!-- Machine 1 Tab -->
+        <div id="machine1" class="tab-pane fade">
+            <div id="contentBox1" style="margin:0px auto; width:70%"></div>
+
+            <div class="column">
+                <h3>Pc1</h3>
+                <h5>Status:</h5>
+                <div id="output1_machine1" class="border p-3"></div>
+                <h5>Pc 1 Image:</h5>
+                <div class="img-container">
+                    <img id="pc1image_machine1" src="" alt="Pc 1 Image">
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h3>Status Frontend:</h3>
-                        <div id="status" class="border p-3"></div>
-                    </div>
+
+            <div class="column">
+                <h3>Pc2</h3>
+                <h5>Status:</h5>
+                <div id="output2_machine1" class="border p-3"></div>
+                <h5>Pc 2 Image:</h5>
+                <div class="img-container">
+                    <img id="pc2image_machine1" src="" alt="Pc 2 Image">
                 </div>
-                <div class="card">
-                    <div class="card-body">
-                        <h3>Message to WebSocket:</h3>
-                        <div class="input-group mb-3">
-                            <input type="text" id="message" name="message" class="form-control" placeholder="Enter message">
-                            <div class="input-group-append">
-                                <button class="btn custom-btn" onclick="sendMessageToServer(document.getElementById('message').value)">Send Message</button>
-                            </div>
-                        </div>
-                    </div>
+            </div>
+
+            <div class="column">
+                <h3>Pc3</h3>
+                <h5>Status:</h5>
+                <div id="output3_machine1" class="border p-3"></div>
+                <h5>Pc 3 Image:</h5>
+                <div class="img-container">
+                    <img id="pc3image_machine1" src="" alt="Pc 3 Image">
                 </div>
-                
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-body text-center">
-                <h2>Calibration</h2>
-                <label for="machine_config">Choose a machine config:</label>
-                <select name="machine_config" id="machine_config">
-                    <option value="" disabled selected>Select a config</option>
-                    <option value="90">90 mm</option>
-                    <option value="63">63 mm</option>
-                </select> 
-                <h6>Main ip-address:</h6>
-                <input type="text" id="main_ip" name="main_ip" placeholder="Enter main ip">
-                <h6>Number of machines:</h6>
-                <input type="text" id="number_of_pcs" name="number_of_pcs" placeholder="Enter number of machines">
-                <h1></h1>
-                <button class="btn custom-btn m-2" onclick="startCalibration()">Start Calibration</button>
+        <!-- Machine 2 Tab -->
+        <div id="machine2" class="tab-pane fade">
+            <div id="contentBox2" style="margin:0px auto; width:70%"></div>
+
+            <div class="column">
+                <h3>Pc1</h3>
+                <h5>Status:</h5>
+                <div id="output1_machine2" class="border p-3"></div>
+                <h5>Pc 1 Image:</h5>
+                <div class="img-container">
+                    <img id="pc1image_machine2" src="" alt="Pc 1 Image">
+                </div>
             </div>
+
+            <div class="column">
+                <h3>Pc2</h3>
+                <h5>Status:</h5>
+                <div id="output2_machine2" class="border p-3"></div>
+                <h5>Pc 2 Image:</h5>
+                <div class="img-container">
+                    <img id="pc2image_machine2" src="" alt="Pc 2 Image">
+                </div>
+            </div>
+
+            <div class="column">
+                <h3>Pc3</h3>
+                <h5>Status:</h5>
+                <div id="output3_machine2" class="border p-3"></div>
+                <h5>Pc 3 Image:</h5>
+                <div class="img-container">
+                    <img id="pc3image_machine2" src="" alt="Pc 3 Image">
+                </div>
+            </div>
+        </div>
     </div>
+</div>
 
-
-
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="ReceiveData.js"></script>
+<script src="ReceiveData.js"></script>
 </body>
 </html>
