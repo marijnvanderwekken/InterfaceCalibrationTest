@@ -82,12 +82,14 @@ class WebSocketClient:
         else:
             logging.info("Cannot send machine config, WebSocket is not running")
 
-    def send_image(self,num_of_cams):
+    def send_image(self,cams):
+        
         if self.ws and self.ws.keep_running:
             message_data = {
             "type_message": "command",
-            "message" : "W_combine_image",
-            "data": self.encode_images(num_of_cams)
+            "message" : "W_send_cam_image",
+            "data": self.encode_images(cams),
+            "client": self.clientId
         }
             self.ws.send(json.dumps(message_data))
             logging.info("Sent machine config")
@@ -96,16 +98,17 @@ class WebSocketClient:
 
 
 
-    def encode_images(self,num_of_cams):
+    def encode_images(self,cams):
         encoded_images = []
+        update_status(f"Start to encode: {len(cams)}")
         try:
-            for index in range(num_of_cams):
-                image_file = os.path.join(os.getcwd(), f"utilities/cam{index}.jpg")
+            for index in range(len(cams)):
+                image_file = os.path.join(os.getcwd(), f"utilities/cam{cams[index]}.jpg")
                 try:
                     with open(image_file, "rb") as img:
                         encoded_string = base64.b64encode(img.read()).decode('utf-8')
                         encoded_images.append(encoded_string)
-                        logging.info(f"Encoded image: {index}")
+                        update_status(f"Encoded image: {cams[index]}")
                 except FileNotFoundError:
                     logging.error(f"File not found: {image_file}")
                 except Exception as e:
@@ -134,7 +137,7 @@ class Calibration_command:
             return f"No config error {e}"
 
     def start_calibration(self, data):
-        logging.info("Starting calibration process")
+        update_status("Starting calibration process")
         machine_config = self.read_hardware_configuration()
         if isinstance(machine_config, str):
             update_status(f"Error in machine configuration: {machine_config}, stop calibration")
@@ -151,7 +154,8 @@ class Calibration_command:
             pc = machine['pcs'][pc_key]
             if self.client.last_octet == str(pc['ip']):
                 update_status(f"Start calibrating on this pc {pc['ip']}")
-                            
+                self.client.send_image(pc['cameras'])   
+          
 
         if False:
             first_calibration = Calibration()

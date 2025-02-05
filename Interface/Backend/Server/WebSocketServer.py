@@ -54,8 +54,9 @@ class WebSocketServer:
                     command_message = data.get("message", "")
                     command_data = data.get("data", "")
                     config_t = data.get("config", "")
+                    client_t = data.get("client","")
                     print(config_t)
-                    await self.command_handler.execute_command(command_message, command_data, config_t, clientId)
+                    await self.command_handler.execute_command(command_message, command_data, config_t, client_t)
 
                 elif message_type == "status":
                     self.status = data.get("data", "")
@@ -97,6 +98,16 @@ class WebSocketServer:
                 "message" : message,
                 "data": data
             })
+            
+    async def send_image(self,message: str, data: str,client: str):
+        for clientId in self.frontend_clients:
+            await self.send_message_to_client(clientId, {
+                "type_message": "command",
+                "message" : message,
+                "data": data,
+                "client": client
+            })
+    
 
     def remove_client(self, clientId: str):
         self.frontend_clients.pop(clientId, None)
