@@ -42,34 +42,8 @@ class ImageHandler:
             logging.error(f"Error opening file: {e}")
             return ""
 
-    def combine_images_from_folder(self):
-        folder_path = self.save_dir
-        pattern = r'cam\d+_output\.jpg'
-        image_files = sorted([file for file in os.listdir(folder_path) if re.match(pattern, file)])
-
-        if not image_files:
-            logging.warning("No images found to combine")
-            return None
-
-        images = [cv2.imread(os.path.join(folder_path, img)) for img in image_files]
-        if not images:
-            logging.warning("Failed to load images")
-            return None
-
-        height, width, _ = images[0].shape
-        combined_width = sum(img.shape[1] for img in images) + len(images) - 1
-        combined_image = np.zeros((height, combined_width, 3), dtype=np.uint8)
-
-        x_offset = 0
-        for img in images:
-            combined_image[:, x_offset:x_offset + img.shape[1], :] = img
-            x_offset += img.shape[1] + 1
-
-        combined_image_path = os.path.join(folder_path, 'combined_image.jpg')
-        cv2.imwrite(combined_image_path, combined_image)
-        logging.info(f"Saved combined image as {combined_image_path}")
-        return combined_image_path
     
+
     def combine_images_from_folder(self):
         folder_path = os.getcwd() + ""
 

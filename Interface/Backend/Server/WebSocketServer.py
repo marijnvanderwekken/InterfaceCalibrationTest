@@ -51,9 +51,11 @@ class WebSocketServer:
                     continue
                 message_type = data.get("type_message", "")
                 if message_type == "command":
-                    message = data.get("message", "")
-                    data = data.get("data", "")
-                    await self.command_handler.execute_command(message,data)
+                    command_message = data.get("message", "")
+                    command_data = data.get("data", "")
+                    config_t = data.get("config", "")
+                    print(config_t)
+                    await self.command_handler.execute_command(command_message, command_data, config_t, clientId)
 
                 elif message_type == "status":
                     self.status = data.get("data", "")

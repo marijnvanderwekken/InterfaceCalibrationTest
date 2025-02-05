@@ -17,12 +17,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 const message = JSON.parse(event.data);
                 if (message.type_message == "status") {
                     const output = document.getElementById("output");
-                    output.textContent = message.data;
+                    output.innerHTML += `<div>${message.data}</div>`;
+                    output.scrollTop= output.scrollHeight;
                 } else if (message.type_message == "config") {
                     console.log("Config message received:", message.data);
-
-                    const configElement = document.getElementById("config");
-                    if (configElement) {
                         let configText = '';
                         machinesData = [];
                         for (const key in message.data) {
@@ -36,9 +34,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     } else {
                         console.error("Element with ID 'config' not found");
                     }
-                } else if (message.type_message == "picture") {
-                    displayImage(message.data);
-                }
             } catch (e) {
                 console.error("Error parsing message:", e);
             }
@@ -54,8 +49,8 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
-    function startCalibration(machine_id) {
-        sendMessageToServer("command", "B_end_start_calibration");
+    function startCalibration(pc_id) {
+        sendMessageToServer("command", "B_end_start_calibration", pc_id);
     }
 
     function initialize_machine() {
@@ -81,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
             updateStatus("WebSocket is not open");
         }
     }
-
+    
     function sendStatusUpdate(type, message) {
         if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type_message: type, data: message }));
@@ -92,32 +87,37 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateStatus(message) {
-        statusr.textContent = message;
+        const statusElement = document.getElementById("status");
+        const outputElement = document.getElementById("output");
+    
+        statusElement.textContent = message;
+    
+        const newMessage = document.createElement("div");
+        newMessage.textContent = message;
+        outputElement.appendChild(newMessage);
+
+        outputElement.scrollTop = outputElement.scrollHeight;
+    
         console.log(message);
     }
 
     function generateMachineTabs(machinesData) {
+        let machine_info = []
         const tabsContainer = document.getElementById("machineTabs");
         const contentContainer = document.getElementById("tabContent");
     
         tabsContainer.innerHTML = '<li class="active"><a data-toggle="tab"  style="color: #2e5426;" href="#start">Start</a></li>';
         contentContainer.innerHTML = `
             <div id="start" class="tab-pane fade in active">
-                  <div style="border: 1px solid #ddd; padding: 10px;margin-top: 20px; width: 40%; ">
-                <h4>Status calibration:</h4>
-                <div id="output" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%; "></div>
-            </div>
+                  
 
             <div style="border: 1px solid #ddd; padding: 10px;margin-top: 20px; width: 40%;">
             <h4>Status Frontend:</h4>
             <div id="status" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%;"></div>
             </div>
             
-        <div style="border: 1px solid #ddd; padding: 10px;margin-top: 20px; width: 40%;">
-            <h4>Config:</h4>
-            <div id="config" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%; "></div>
-        </div>
-
+        
+            <button class="btn btn-primary m-2" onclick="initialize_machine()">Initialize again</button>
             </div>
         `;
     
@@ -132,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const pc = machine.pcs[pcKey];
                     const numCameras = pc.cameras.length;
                     let cameraImages = "";
+
                     pc.cameras.forEach(cameraId => {
                         cameraImages += `
                             <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
@@ -142,14 +143,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
     
                     pcSections += `
-                        <div class="col-md-4 pc-section" style="border:1px solid #ddd; margin-top: 20px;">
-                            <h3>PC ID: ${pc.pc_id}</h3>
+                        <div class="col-md-4 pc-section" style="border:1px solid #ddd; margin-top: 20px;width: 30%; margin-right: 10px; margin-left: 10px;">
+                            <h3>PC ID: ${pc.pc_id} IP: ${pc.ip}</h3>
                             <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
                                 <h5>Number of cameras: ${numCameras}</h5>
                             </div>
                             <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
                                 <h5>Status:</h5>
-                                <div id="output${pc.pc_id}_machine${machine.machine_id}" class="border p-3"></div>
+                                <div id="output" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 100%; height: 90px; overflow-y: auto;"></div>
                             </div>
                             ${cameraImages}
                         </div>
@@ -159,18 +160,21 @@ document.addEventListener("DOMContentLoaded", () => {
     
             contentContainer.innerHTML += `
                 <div id="machine${index}" class="tab-pane fade">
-                    <div id="contentBox${machine.machine_id}" class="row justify-content-center" style="margin:10px auto; width:100%">
+                    <div id="contentBox${machine.machine_id}" class="row justify-content-center" style="margin:10px auto; width:100%; display: flex; justify-content: center;">
                         ${pcSections}
                     </div>
-                    <div class="text-center machine-config" style="margin-top: 100px;">
-                        <label for="machine_config">Machine Config:</label>
-                        <select name="machine_config" id="machine_config">
-                            <option value="63">63 mm</option>
-                            <option value="90">90 mm</option>
-                        </select>
-                    </div>
-                    <div class="text-center" style="margin-top: 20px;">
-                        <button class="btn btn-primary m-2" onclick="startCalibration('${machine.machine_id}')">Start calibration ${machine.name}</button>
+                    <div class="d-flex justify-content-center" style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 30%; margin: 0 auto;">
+                        <div class="text-center machine-config" style="margin-top: 20px;">
+                            <label for="machine_config">Machine Config:</label>
+                            <select name="machine_config" id="machine_config">
+                                <option value="63">63 mm</option>
+                                <option value="90">90 mm</option>
+                            </select>
+                        </div>
+                        
+                        <div class="text-center" >
+                            <button class="btn btn-primary m-2" onclick="startCalibration('${machine.machine_id}')">Start calibration ${machine.name}</button>
+                        </div>
                     </div>
                 </div>
             `;

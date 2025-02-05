@@ -58,17 +58,18 @@ class Calibration:
         update_status(f"Camera image extraction from {ip} to {wd}")
 
 
-    def main_calibration(self,ip_addres,number_pc,machine_config):
+    def main_calibration(self,ip_addres,number_pc,machine_config, machine_id):
+        
         ip_addres = "1.1.1.1"
         number_pc = 2
         machine_config = 63
 
         wd = Path.cwd() / "utilities"
 
-        update_status(f"Starting calibration with ip: {ip_addres}" f" and with {number_pc} numper of pcs "  f"And with machine config: {machine_config}")
+        update_status(f"Starting calibration with ip: {ip_addres}" f" and with {number_pc} number of pcs "  f"And with machine config: {machine_config} on machine: {machine_id}")
         exposuretime_file = wd / "exposuretime.txt"
         device_settings_file = wd / "G_device_settings.ini"
-
+        
         main_ip = ip_addres
         while not self.validate_ip(main_ip):
             main_ip = input("Invalid IP address. Please enter a valid IP: ")

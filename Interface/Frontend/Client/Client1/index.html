@@ -13,6 +13,7 @@
     <style>
          .btn.btn-primary.m-2 {
             background-color: #2e5426;
+            margin-top: 20px;
         }
         .pc-section {
             display: flex;
@@ -34,21 +35,12 @@
     <div class="tab-content" id="tabContent">
         <div id="start" class="tab-pane fade in active">
 
-            <div style="border: 1px solid #ddd; padding: 10px;margin-top: 20px; width: 40%; ">
-                <h4>Status calibration:</h4>
-                <div id="output" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%; "></div>
-            </div>
 
             <div style="border: 1px solid #ddd; padding: 10px;margin-top: 20px; width: 40%;">
             <h4>Status Frontend:</h4>
             <div id="status" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%;"></div>
             </div>
             
-        <div style="border: 1px solid #ddd; padding: 10px;margin-top: 20px; width: 40%;">
-            <h4>Config:</h4>
-            <div id="config" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%; "></div>
-        </div>
-
             <button class="btn btn-primary m-2" onclick="initialize_machine()">Initialize machine</button>
         </div>
     </div>
