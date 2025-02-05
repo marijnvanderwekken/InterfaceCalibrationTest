@@ -59,8 +59,9 @@ class WebSocketServer:
 
                 elif message_type == "status":
                     self.status = data.get("data", "")
+                    client = data.get("client", "")
                     if self.status != self.previous_status:
-                        await self.broadcast_status(self.status)
+                        await self.broadcast_status(self.status,client)
 
                 elif message_type == "config":
                     self.machine_config = data.get("data", "")
@@ -74,11 +75,12 @@ class WebSocketServer:
             logging.error(f"WebSocket Error with {clientId}: {e}")
             self.remove_client(clientId)
 
-    async def broadcast_status(self, status: str):
+    async def broadcast_status(self, status: str, client: str):
         for clientId in self.frontend_clients:
             await self.send_message_to_client(clientId, {
                 "type_message": "status",
-                "data": status
+                "data": status,
+                "client": client
             })
 
     async def broadcast_config(self, config: str):

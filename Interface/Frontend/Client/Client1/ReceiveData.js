@@ -5,6 +5,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let ws = null;
     let machinesData = [];
     let machines = []
+    let  current_client = ""
+    let current_status = [[]];
     function connectWebSocket() {
         ws = new WebSocket(wsUrl);
 
@@ -15,25 +17,34 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Message from server:" + event.data);
             try {
                 const message = JSON.parse(event.data);
+
                 if (message.type_message == "status") {
-                    const output = document.getElementById("output");
+                    const current_client = message.client;
+                    if (!current_status[current_client]) {
+                        current_status[current_client] = [];
+                    }
+                    current_status[current_client].push(message.data);
+                    const output = document.getElementById(`status_${current_client}`);
+                    console.log(`received from client ${current_client}`);
+  
                     output.innerHTML += `<div>${message.data}</div>`;
-                    output.scrollTop= output.scrollHeight;
+                    output.scrollTop = output.scrollHeight;
+                    
                 } else if (message.type_message == "config") {
                     console.log("Config message received:", message.data);
-                        let configText = '';
-                        machinesData = [];
-                        for (const key in message.data) {
-                            if (message.data.hasOwnProperty(key)) {
-                                machinesData.push(message.data[key]);
-                                configText += `Machine ID: ${message.data[key].machine_id}, Number of PCs: ${message.data[key].numb_of_pcs} \n `;
-                            }
+                    let configText = '';
+                    machinesData = [];
+                    for (const key in message.data) {
+                        if (message.data.hasOwnProperty(key)) {
+                            machinesData.push(message.data[key]);
+                            configText += `Machine ID: ${message.data[key].machine_id}, Number of PCs: ${message.data[key].numb_of_pcs} \n `;
                         }
-                        generateMachineTabs(machinesData);
-                        configElement.textContent = `${configText}Number of machines in total: ${machinesData.length}`;
-                    } else {
-                        console.error("Element with ID 'config' not found");
                     }
+                    generateMachineTabs(machinesData);
+                    configElement.textContent = `${configText}Number of machines in total: ${machinesData.length}`;
+                } else {
+                    console.error("Element with ID 'config' not found");
+                }
             } catch (e) {
                 console.error("Error parsing message:", e);
             }
@@ -144,13 +155,13 @@ document.addEventListener("DOMContentLoaded", () => {
     
                     pcSections += `
                         <div class="col-md-4 pc-section" style="border:1px solid #ddd; margin-top: 20px;width: 30%; margin-right: 10px; margin-left: 10px;">
-                            <h3>PC ID: ${pc.pc_id} IP: ${pc.ip}</h3>
+                            <h3>PC${pc.ip}</h3>
                             <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
                                 <h5>Number of cameras: ${numCameras}</h5>
                             </div>
                             <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
-                                <h5>Status:</h5>
-                                <div id="output" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 100%; height: 90px; overflow-y: auto;"></div>
+                                <h5>Status of PC${pc.ip}</h5>
+                              <div id="status_${pc.ip}" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 100%; height: 90px; overflow-y: auto;"></div>
                             </div>
                             ${cameraImages}
                         </div>

@@ -12,7 +12,8 @@ class WebSocketClient:
         self.command = Calibration_command(self)
         self.current_ip = os.popen('hostname -I').read().strip().split()[0]
         self.last_octet = self.current_ip.split('.')[-1]
-
+        
+        #self.clientId = input()
         self.clientId = self.last_octet
         self.uri = f"ws://127.0.0.1:8000/ws/B{self.clientId}"
         self.response = None
@@ -65,7 +66,7 @@ class WebSocketClient:
         while ws.keep_running:
             current_status = get_status()
             if current_status != self.previous_status and current_status != " ":
-                ws.send(json.dumps({"type_message": "status", "data": current_status}))
+                ws.send(json.dumps({"type_message": "status", "data": current_status,"client":self.clientId}))
                 logging.info(f"Sent status: {current_status}")
                 self.previous_status = current_status
             time.sleep(1)
