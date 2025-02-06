@@ -38,7 +38,7 @@ class CommandHandler:
         await self.server.broadcast_to_backends("B_end_stop_calibration","None")
 
     async def send_cam_image(self,data,client_t):
-            await self.server.send_image("W_send_cam_image",data,client_t)
+            await self.server.send_image("W_send_cam_image",data,client_t,)
             
     
     async def send_combine_images(self, data):

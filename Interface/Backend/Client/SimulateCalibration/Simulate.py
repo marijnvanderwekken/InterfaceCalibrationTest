@@ -16,6 +16,14 @@ import threading
 import time
 from sendStatus import update_status
 
+class Calibration_vs:
+        def main(self):
+            update_status("Starting vs grader script")
+
+class Calibration_qg:
+    def main(self):
+            update_status("Starting qg grader script")
+    
 class Calibration:
     
     def validate_ip(self,ip):

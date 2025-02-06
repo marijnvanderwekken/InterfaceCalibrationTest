@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     output.innerHTML += `<div>${message.data}</div>`;
                     output.scrollTop = output.scrollHeight;
-                    
+
                 } else if (message.type_message === "config") {
                     console.log("Config message received:", message.data);
                     let configText = '';
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (configElement) {
                         configElement.textContent = `${configText}Number of machines in total: ${machinesData.length}`;
                     }
-  
+
                 } else if (message.message === "W_send_cam_image") {
                     console.log("Image message received from client", message.client);
                     console.log("Check machinedata", machinesData);
@@ -58,7 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     let cams = [];
                     let imagedata = [];
 
-                    // Find the machine and PC with the matching IP address
                     for (const machine of machinesData) {
                         for (const pcKey in machine.pcs) {
                             if (machine.pcs.hasOwnProperty(pcKey)) {
@@ -79,13 +78,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.log("Numbers of cameras:", cams.length);
                     console.log('Message data', message.data);
 
-                    // Ensure message.data is an array of base64 strings
                     if (Array.isArray(message.data)) {
                         imagedata = message.data.map((base64String, index) => {
                             return { cameraId: cams[index], base64String };
                         });
 
-                        for (let i = 0; i < cams.length; i++) { 
+                        for (let i = 0; i < cams.length; i++) {
                             const imageElement = document.getElementById(`camera${cams[i]}_pc${pc_id}_machine${machine_id}`);
                             if (imageElement) {
                                 imageElement.src = `data:image/png;base64,${imagedata[i].base64String}`;
@@ -139,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
             updateStatus("WebSocket is not open");
         }
     }
-    
+
     function sendStatusUpdate(type, message) {
         if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type_message: type, data: message }));
@@ -152,56 +150,68 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateStatus(message) {
         const statusElement = document.getElementById("status");
         const outputElement = document.getElementById("output");
-    
+
         statusElement.textContent = message;
-    
+
         const newMessage = document.createElement("div");
         newMessage.textContent = message;
         outputElement.appendChild(newMessage);
 
         outputElement.scrollTop = outputElement.scrollHeight;
-    
+
         console.log(message);
     }
 
     function generateMachineTabs(machinesData) {
         const tabsContainer = document.getElementById("machineTabs");
         const contentContainer = document.getElementById("tabContent");
-    
-        tabsContainer.innerHTML = '<li class="active"><a data-toggle="tab" style="color: #2e5426;" href="#start">Start</a></li>';
-        contentContainer.innerHTML = `
-            <div id="start" class="tab-pane fade in active">
-                <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 40%;">
-                    <h4>Status Frontend:</h4>
-                    <div id="status" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%;"></div>
-                </div>
-                <button class="btn btn-primary m-2" onclick="initialize_machine()">Initialize again</button>
+
+        tabsContainer.innerHTML = `
+        <li class="active"><a data-toggle="tab" style="color: #2e5426;" href="#start">Start</a></li>
+        <li><a data-toggle="tab" style="color: #2e5426;" href="#calibrations">Calibrations</a></li>
+    `;
+    contentContainer.innerHTML = `
+        <div id="start" class="tab-pane fade in active">
+            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 40%;">
+                <h4>Status Frontend:</h4>
+                <div id="status" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%;"></div>
             </div>
-        `;
-    
+            <button class="btn btn-primary m-2" onclick="initialize_machine()">Initialize again</button>
+        </div>
+        <div id="calibrations" class="tab-pane fade">
+            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 40%;">
+                <h4>Previous calibrations:</h4>
+                <div id="calibrations" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%;"></div>
+            </div>
+        </div>
+    `;
+
+        
+
         machinesData.forEach((machine, index) => {
             tabsContainer.innerHTML += `
                 <li><a data-toggle="tab" style="color: #2e5426;" href="#machine${index}">${machine.name}</a></li>
             `;
-    
+
             let pcSections = "";
             for (const pcKey in machine.pcs) {
                 if (machine.pcs.hasOwnProperty(pcKey)) {
                     const pc = machine.pcs[pcKey];
                     const numCameras = pc.cameras.length;
                     let cameraImages = "";
-    
+
                     pc.cameras.forEach(cameraId => {
                         cameraImages += `
                             <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
                                 <h5>Camera ${cameraId} Image:</h5>
-                                <img id="camera${cameraId}_pc${pc.pc_id}_machine${machine.machine_id}" class="img-responsive" src="" alt="Camera ${cameraId} Image">
+                                <img id="camera${cameraId}_pc${pc.pc_id}_machine${machine.machine_id}" class="img-responsive" src="" alt="Camera ${cameraId} Image" onclick="enlargeImg(camera${cameraId}_pc${pc.pc_id}_machine${machine.machine_id})">
                             </div>
+                            
                         `;
                     });
-    
+
                     pcSections += `
-                        <div class="col-md-4 pc-section" style="border: 1px solid #ddd; margin-top: 20px; width: 30%; margin: 0 10px;">
+                        <div class="col-md-4 pc-section" style="border: 1px solid #ddd; margin-top: 20px; width: 40%; margin: 0 10px;">
                             <h3>PC${pc.ip}</h3>
                             <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
                                 <h5>Number of cameras: ${numCameras}</h5>
@@ -210,12 +220,18 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <h5>Status of PC${pc.ip}</h5>
                                 <div id="status_${pc.ip}" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 100%; height: 90px; overflow-y: auto;"></div>
                             </div>
-                            ${cameraImages}
+                            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
+                                <div id="cameraContainer_${pc.pc_id}_${machine.machine_id}" style="display: flex; overflow-x: auto; width: 100%;">
+                                    ${cameraImages}
+                                </div>
+                                <p>Click on the image to zoom in</p>
+                            </div>
                         </div>
                     `;
+                    
                 }
             }
-    
+
             contentContainer.innerHTML += `
                 <div id="machine${index}" class="tab-pane fade">
                     <div id="contentBox${machine.machine_id}" class="row justify-content-center" style="margin:10px auto; width:100%; display: flex; justify-content: center;">
@@ -235,7 +251,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 </div>
             `;
+            
         });
+        
     }
 
     window.sendMessageToServer = sendMessageToServer;
@@ -246,21 +264,31 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-function findMachineIdByIp(ip, data) {
-    for (const machineKey in data) {
-        if (data.hasOwnProperty(machineKey)) {
-            const machine = data[machineKey];
-            if (machine.pcs) {
-                for (const pcKey in machine.pcs) {
-                    if (machine.pcs.hasOwnProperty(pcKey)) {
-                        const pc = machine.pcs[pcKey];
-                        if (pc.ip === ip) {
-                            return machine.machine_id;
-                        }
-                    }
-                }
-            }
+function enlargeImg(img) {
+    if (!document.fullscreenElement) {
+        if (img.requestFullscreen) {
+            img.requestFullscreen();
+        } else if (img.mozRequestFullScreen) {
+            img.mozRequestFullScreen();
+        } else if (img.webkitRequestFullscreen) {
+            img.webkitRequestFullscreen();
+        } else if (img.msRequestFullscreen) {
+            img.msRequestFullscreen();
+        }
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
         }
     }
-    return null;
 }
+
+
+
+
+
