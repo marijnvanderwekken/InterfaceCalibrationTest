@@ -123,10 +123,8 @@ class WebSocketServer:
     async def create_machine_object(self, clientId, config):
         ip = clientId[8:]
         logging.info(f"Extracted IP: {ip}")
-
         if not ip.isdigit():
             raise ValueError(f"Invalid IP extracted from clientId: {ip}")
-
         machine_id = Machine.find_machine_id_by_ip(config, int(ip))
         if machine_id is None:
             raise ValueError(f"No machine found with IP: {ip}")
@@ -175,6 +173,7 @@ class WebSocketServer:
                 "data": status,
                 "client": client
             })
+    
 
     async def broadcast_config(self, config: str):
         for clientId in self.frontend_clients:
