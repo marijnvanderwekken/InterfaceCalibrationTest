@@ -1,13 +1,15 @@
 import logging
+from Pc import PC
 
 class Machine:
     def __init__(self, machine_id, config):
+        self.machine_id = machine_id
         self.machine_config = config
         self.type = config[machine_id]['type']
         self.name = config[machine_id]['name']
         self.numb_of_pcs = config[machine_id]['numb_of_pcs']
         self.numb_of_cameras = config[machine_id]['numb_of_cameras']
-        self.pcs = config[machine_id]['pcs']
+        self.pcs = {pc_id: PC(pc_id, pc_data) for pc_id, pc_data in config[machine_id]['pcs'].items()}
         self.logged_pcs = []
 
         logging.info(f"Machine created with: type={self.type}, name={self.name}, numb_of_pcs={self.numb_of_pcs}, numb_of_cameras={self.numb_of_cameras}, pcs={self.pcs}")

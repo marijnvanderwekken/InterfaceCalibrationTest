@@ -7,15 +7,15 @@ import os
 import time
 from sendStatus import get_status, update_status
 from SimulateCalibration.Simulate import Calibration_vs, Calibration_qg
+
 class WebSocketClient:
     def __init__(self):
         self.command = Calibration_command(self)
         self.current_ip = os.popen('hostname -I').read().strip().split()[0]
         self.last_octet = self.current_ip.split('.')[-1]
         
-        #self.clientId = input()
         self.clientId = self.last_octet
-        self.uri = f"ws://127.0.0.1:8000/ws/B{self.clientId}"
+        self.uri = f"ws://192.168.1.90:8000/ws/Back-end{self.clientId}"
         self.response = None
         self.status = ""
         self.previous_status = ""
@@ -24,6 +24,8 @@ class WebSocketClient:
         self.send_config_ready = False
         self.ws = None
         self.data = ""
+        self.machine_config = {}
+
     def connect(self):
         while True:
             try:
@@ -56,17 +58,13 @@ class WebSocketClient:
         logging.error(f"WebSocket error: {error}")
 
     def on_close(self, ws, close_status_code, close_msg):
-        logging.info("Connection closed")
-
-    def on_open(self, ws):
-        logging.info(f"Connected to WebSocket server, your IP is: {self.current_ip} your ID is: B{self.clientId}")
-        threading.Thread(target=self.send_status, args=(ws,)).start()
+        logging.info(f"Connection closed with status code: {close_status_code}, message: {close_msg}")
 
     def send_status(self, ws):
         while ws.keep_running:
             current_status = get_status()
             if current_status != self.previous_status and current_status != " ":
-                ws.send(json.dumps({"type_message": "status", "data": current_status,"client":self.clientId}))
+                ws.send(json.dumps({"type_message": "status", "data": current_status, "client": self.clientId}))
                 logging.info(f"Sent status: {current_status}")
                 self.previous_status = current_status
             time.sleep(1)
@@ -82,23 +80,20 @@ class WebSocketClient:
         else:
             logging.info("Cannot send machine config, WebSocket is not running")
 
-    def send_image(self,cams):
-        
+    def send_image(self, cams):
         if self.ws and self.ws.keep_running:
             message_data = {
-            "type_message": "command",
-            "message" : "W_send_cam_image",
-            "data": self.encode_images(cams),
-            "client": self.clientId
-        }
+                "type_message": "command",
+                "message": "W_send_cam_image",
+                "data": self.encode_images(cams),
+                "client": self.clientId
+            }
             self.ws.send(json.dumps(message_data))
             logging.info("Sent machine config")
         else:
             logging.info("Cannot send machine config, WebSocket is not running")
 
-
-
-    def encode_images(self,cams):
+    def encode_images(self, cams):
         encoded_images = []
         update_status(f"Start to encode: {len(cams)}")
         try:
@@ -117,15 +112,10 @@ class WebSocketClient:
             logging.error(f"Unexpected error: {e}")
         return encoded_images
 
-class Calibration_command:
-    def __init__(self, client: WebSocketClient):
-        self.client = client
-        self.client.command_dict = { 
-            "B_end_start_calibration": self.start_calibration,
-            "B_end_stop_calibration": self.stop_calibration,
-            "B_end_initialize_machine": self.initialize_machine
-        }
-        self.machine_config = {}
+    def on_open(self, ws):
+        logging.info(f"Connected to WebSocket server, your IP is: {self.current_ip} your ID is: B{self.clientId}")
+        self.send_config(self.read_hardware_configuration())
+        threading.Thread(target=self.send_status, args=(ws,)).start()
 
     def read_hardware_configuration(self):
         try:
@@ -134,11 +124,21 @@ class Calibration_command:
                 self.machine_config = json.load(json_data)
             return self.machine_config
         except Exception as e:
-            return f"No config error {e}"
+            logging.error(f"Error reading hardware configuration: {e}")
+            return {}
 
+class Calibration_command:
+    def __init__(self, client: WebSocketClient):
+        self.client = client
+        self.client.command_dict = { 
+            "B_end_start_calibration": self.start_calibration,
+            "B_end_stop_calibration": self.stop_calibration,
+            "B_end_initialize_machine": self.initialize_machine
+        }
+        
     def start_calibration(self, data):
         update_status("Starting calibration process")
-        machine_config = self.read_hardware_configuration()
+        machine_config = self.client.read_hardware_configuration()
         if isinstance(machine_config, str):
             update_status(f"Error in machine configuration: {machine_config}, stop calibration")
             return
@@ -164,22 +164,16 @@ class Calibration_command:
                     calibration_qg_thread.start()
                 
                 self.client.send_image(pc['cameras'])
-                    
-
-      
 
     def stop_calibration(self, data):
         self.client.status = "Stop calibration"
 
-    def initialize_machine(self,data):
-        self.client.send_config(self.read_hardware_configuration())
-        
+    def initialize_machine(self, data):
+        self.client.send_config(self.client.read_hardware_configuration())
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     wsc = WebSocketClient()
     CalibrationProcess = Calibration_command(wsc)
-    CalibrationProcess.read_hardware_configuration()
-    
-
+    CalibrationProcess.client.read_hardware_configuration()
     threading.Thread(target=wsc.connect).start()

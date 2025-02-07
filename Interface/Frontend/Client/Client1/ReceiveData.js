@@ -1,18 +1,20 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const clientId = "F1";
+    const clientId = "Front-end";
     const statusr = document.getElementById("status");
-    const wsUrl = `ws://127.0.0.1:8000/ws/${clientId}`;
+    const wsUrl = `ws://192.168.1.90:8000/ws/${clientId}`;
     let ws = null;
     let machinesData = [];
     let machines = [];
     let current_client = "";
     let current_status = [[]];
+    let connected_pcs = []
 
     function connectWebSocket() {
         ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
             updateStatus(`Connected to server: ${ws.url}`);
+            initialize_machine();
         };
 
         ws.onmessage = (event) => {
@@ -42,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             configText += `Machine ID: ${message.data[key].machine_id}, Number of PCs: ${message.data[key].numb_of_pcs}\n`;
                         }
                     }
+                    
                     generateMachineTabs(machinesData);
                     const configElement = document.getElementById("configElement");
                     if (configElement) {
@@ -95,6 +98,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     } else {
                         console.error("message.data is not an array of base64 strings");
                     }
+                } else if (message.type_message === "connected_pcs") {
+                    connected_pcs = message.data.flat();
+                    console.log(connected_pcs);
+                    updatePCStatus();
                 }
             } catch (e) {
                 console.error("Error parsing message:", e);
@@ -117,6 +124,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function initialize_machine() {
         sendMessageToServer("command", "B_end_initialize_machine");
+        updateStatus("Initializing machine...");
+        generateMachineTabs(machinesData);
     }
 
     function displayImage(base64String) {
@@ -162,6 +171,20 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log(message);
     }
 
+    function updatePCStatus() {
+        machinesData.forEach(machine => {
+            for (const pcKey in machine.pcs) {
+                if (machine.pcs.hasOwnProperty(pcKey)) {
+                    const pc = machine.pcs[pcKey];
+                    const statusElement = document.getElementById(`status-container-${pc.ip}`);
+                    if (statusElement) {
+                        statusElement.innerHTML = `<h5>Status: ${connected_pcs.includes(pc.ip.toString()) ? 'Online' : 'Offline'}</h5>`;
+                    }
+                }
+            }
+        });
+    }
+
     function generateMachineTabs(machinesData) {
         const tabsContainer = document.getElementById("machineTabs");
         const contentContainer = document.getElementById("tabContent");
@@ -170,23 +193,6 @@ document.addEventListener("DOMContentLoaded", () => {
         <li class="active"><a data-toggle="tab" style="color: #2e5426;" href="#start">Start</a></li>
         <li><a data-toggle="tab" style="color: #2e5426;" href="#calibrations">Calibrations</a></li>
     `;
-    contentContainer.innerHTML = `
-        <div id="start" class="tab-pane fade in active">
-            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 40%;">
-                <h4>Status Frontend:</h4>
-                <div id="status" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%;"></div>
-            </div>
-            <button class="btn btn-primary m-2" onclick="initialize_machine()">Initialize again</button>
-        </div>
-        <div id="calibrations" class="tab-pane fade">
-            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 40%;">
-                <h4>Previous calibrations:</h4>
-                <div id="calibrations" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 90%;"></div>
-            </div>
-        </div>
-    `;
-
-        
 
         machinesData.forEach((machine, index) => {
             tabsContainer.innerHTML += `
@@ -206,21 +212,23 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <h5>Camera ${cameraId} Image:</h5>
                                 <img id="camera${cameraId}_pc${pc.pc_id}_machine${machine.machine_id}" class="img-responsive" src="" alt="Camera ${cameraId} Image" onclick="enlargeImg(camera${cameraId}_pc${pc.pc_id}_machine${machine.machine_id})">
                             </div>
-                            
                         `;
                     });
 
                     pcSections += `
-                        <div class="col-md-4 pc-section" style="border: 1px solid #ddd; margin-top: 20px; width: 40%; margin: 0 10px;">
+                        <div class="col-md-4 pc-section" style="border: 1px solid #ddd; margin-top: 10px; width: 40%; margin: 0 10px;">
                             <h3>PC${pc.ip}</h3>
-                            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
+                            <div id="cntr${pc.ip}" style="border: 1px solid #ddd; padding: 10px; margin-top: 10px; width: 90%; margin-bottom: 20px;">
+                            <div id="status-container-${pc.ip}">
+                                <h5>Status: ${connected_pcs.includes(pc.ip.toString()) ? 'Online' : 'Offline'}</h5>
+                                </div>
                                 <h5>Number of cameras: ${numCameras}</h5>
                             </div>
-                            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
+                            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 10px; width: 90%; margin-bottom: 10px;">
                                 <h5>Status of PC${pc.ip}</h5>
                                 <div id="status_${pc.ip}" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 100%; height: 90px; overflow-y: auto;"></div>
                             </div>
-                            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
+                            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 10px;">
                                 <div id="cameraContainer_${pc.pc_id}_${machine.machine_id}" style="display: flex; overflow-x: auto; width: 100%;">
                                     ${cameraImages}
                                 </div>
@@ -228,7 +236,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                         </div>
                     `;
-                    
                 }
             }
 
@@ -251,9 +258,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 </div>
             `;
-            
         });
-        
     }
 
     window.sendMessageToServer = sendMessageToServer;
@@ -261,8 +266,8 @@ document.addEventListener("DOMContentLoaded", () => {
     window.startCalibration = startCalibration;
     window.initialize_machine = initialize_machine;
     connectWebSocket();
+    
 });
-
 
 function enlargeImg(img) {
     if (!document.fullscreenElement) {
@@ -287,8 +292,3 @@ function enlargeImg(img) {
         }
     }
 }
-
-
-
-
-

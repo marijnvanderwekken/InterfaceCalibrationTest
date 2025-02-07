@@ -7,6 +7,7 @@ import os
 import configparser
 from ImageHandler import ImageHandler
 from CommandHandler import CommandHandler 
+from Machine import Machine
 
 class WebSocketServer:
     def __init__(self):
@@ -27,54 +28,145 @@ class WebSocketServer:
         self.machine_config = ""
         self.previous_machine_config = ""
         self.previous_status = ""
+        self.previousClient = 0
+        self.fclient = 0
+        self.machines = []
 
     async def websocket_endpoint(self, websocket: WebSocket, clientId: str):
         await websocket.accept()
-        if clientId.startswith("F"):
-            self.frontend_clients[clientId] = websocket
-        elif clientId.startswith("B"):
+       
+        if clientId.startswith("Front-end"):
+            self.fclient += 1
+            unique_client_id = f"F{self.fclient}"
+            self.frontend_clients[unique_client_id] = websocket
+            clientId = unique_client_id
+            logging.info(f"Client id is {clientId}")
+        elif clientId.startswith("Back-end"):
             self.backend_clients[clientId] = websocket
+            await self.handle_backend_client(websocket, clientId)
         else:
             logging.info(f"Invalid Client ID: {clientId}")
             await websocket.close()
             return
         logging.info(f"Client {clientId} connected")
+        await self.broadcast_connected_pcs(self.machines)
 
         try:
             while True:
                 message = await websocket.receive_text()
-                logging.info(f"Received message from {clientId}: {message}")
                 try:
                     data = json.loads(message)
                 except json.JSONDecodeError:
                     logging.error(f"Received invalid JSON message from {clientId}")
                     continue
                 message_type = data.get("type_message", "")
+                if message_type != "config":
+                    logging.info(f"Received message from {clientId}: {message}")
+
                 if message_type == "command":
                     command_message = data.get("message", "")
                     command_data = data.get("data", "")
                     config_t = data.get("config", "")
                     client_t = data.get("client","")
-                    print(config_t)
+                    
                     await self.command_handler.execute_command(command_message, command_data, config_t, client_t)
-
                 elif message_type == "status":
                     self.status = data.get("data", "")
                     client = data.get("client", "")
                     if self.status != self.previous_status:
-                        await self.broadcast_status(self.status,client)
-
+                        await self.broadcast_status(self.status, client)
                 elif message_type == "config":
                     self.machine_config = data.get("data", "")
                     if self.config != self.previous_machine_config:
                         await self.broadcast_config(self.machine_config)
-                    
+
+
         except WebSocketDisconnect:
             logging.info(f"Client {clientId} disconnected")
             self.remove_client(clientId)
+            await self.broadcast_connected_pcs(self.machines)
         except Exception as e:
             logging.error(f"WebSocket Error with {clientId}: {e}")
             self.remove_client(clientId)
+
+    async def handle_backend_client(self, websocket: WebSocket, clientId: str):
+        logging.info("Create machine object")
+        try:
+            while True:
+                message = await websocket.receive_text()
+                logging.info(message)
+                try:
+                    data = json.loads(message)
+                except json.JSONDecodeError:
+                    logging.error(f"Received invalid JSON message from {clientId}")
+                    continue
+                message_type = data.get("type_message", "")
+                if message_type == "config":
+                    self.machine_config = data.get("data", "")
+                    try:
+                        await self.create_machine_object(clientId, self.machine_config)
+                        
+                    except Exception as e:
+                        logging.error(f"Error creating Machine object for {clientId}: {e}")
+                        await websocket.close()
+                        return
+                    
+                    self.previousClient = clientId
+                    break
+        except WebSocketDisconnect:
+            logging.info(f"Backend client {clientId} disconnected during initial config")
+            self.remove_client(clientId)
+        except Exception as e:
+            logging.error(f"WebSocket Error with backend client {clientId}: {e}")
+            self.remove_client(clientId)
+
+    async def create_machine_object(self, clientId, config):
+        ip = clientId[8:]
+        logging.info(f"Extracted IP: {ip}")
+
+        if not ip.isdigit():
+            raise ValueError(f"Invalid IP extracted from clientId: {ip}")
+
+        machine_id = Machine.find_machine_id_by_ip(config, int(ip))
+        if machine_id is None:
+            raise ValueError(f"No machine found with IP: {ip}")
+
+        new_machine = Machine(machine_id, config)
+
+        existing_machine_names = [machine.getMachineParameter('name') for machine in self.machines]
+        if new_machine.getMachineParameter('name') in existing_machine_names:
+            machine_index = existing_machine_names.index(new_machine.getMachineParameter('name'))
+            logging.info(f"Machine object already created")
+            self.machines[machine_index].logged_pcs.append(ip)
+            logging.info("Succesfully put connected pc in connected pcs send to front end")
+            await self.broadcast_connected_pcs(self.machines)
+
+        else:
+            logging.info(f"Successfully created machine: {new_machine.getMachineParameter('name')} number of total machines: {len(self.machines)}")
+            self.machines.append(new_machine)
+            machine_index = self.machines.index(new_machine)
+            self.machines[machine_index].logged_pcs.append(ip)
+            logging.info("Succesfully put connected pc in connected pcs send to front end")
+            await self.broadcast_connected_pcs(self.machines)
+            
+        try:
+            if new_machine in self.machines:
+                machine_index = self.machines.index(new_machine)
+                logging.info(f"CHECK: Number of cameras for machine: {new_machine}: {self.machines[machine_index].getMachineParameter('numb_of_cameras')}")
+            for pc_id, pc in self.machines[machine_index].getMachineParameter('pcs').items():
+                logging.info(f"PC {pc_id} for machine {new_machine.getMachineParameter('name')}: {pc}")
+
+        except Exception as e:
+            logging.info(f"Cant find cameras error: {e}")
+        
+
+    async def broadcast_connected_pcs(self, machines):
+        logging.info("send connected pcs")
+        for clientId in self.frontend_clients:
+            await self.send_message_to_client(clientId, {
+                "type_message": "connected_pcs",
+                "data": [machine.logged_pcs for machine in machines]
+            })
 
     async def broadcast_status(self, status: str, client: str):
         for clientId in self.frontend_clients:
@@ -99,7 +191,7 @@ class WebSocketServer:
                 "data": data
             })
             
-    async def send_image(self,message: str, data: str,client: str):
+    async def send_image(self, message: str, data: str, client: str):
         for clientId in self.frontend_clients:
             await self.send_message_to_client(clientId, {
                 "type_message": "command",
@@ -107,16 +199,24 @@ class WebSocketServer:
                 "data": data,
                 "client": client
             })
-    
 
     def remove_client(self, clientId: str):
         self.frontend_clients.pop(clientId, None)
         self.backend_clients.pop(clientId, None)
-
+        for machine in self.machines:
+            if clientId[8:] in machine.logged_pcs:
+                logging.info(f"Check if {clientId[8:]} is in {machine} in machine {machine.logged_pcs}")
+                pc_index = machine.logged_pcs.index(clientId[8:])
+                logging.info(f"Log out pc: {machine.logged_pcs[pc_index]}")
+                del machine.logged_pcs[pc_index]
+                break
+    
+                
     def run_server(self):
         host = self.config.get('server', 'host', fallback="127.0.0.1")
         port = self.config.getint('server', 'port', fallback=8000)
         uvicorn.run(self.app, host=host, port=port, timeout_keep_alive=300)
+
 
     async def send_message_to_client(self, clientId: str, message: dict):
         json_message = json.dumps(message)

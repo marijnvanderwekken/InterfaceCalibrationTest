@@ -13,7 +13,8 @@ class CommandHandler:
             "B_end_stop_calibration": self.stop_calibration,
             "B_end_send_combine_images": self.send_combine_images,
             "W_send_cam_image": self.send_cam_image,
-            "B_end_initialize_machine": self.initialize_machine,
+            "B_end_initialize_machine": self.initialize_machine
+ 
         }
 
     
@@ -39,8 +40,7 @@ class CommandHandler:
 
     async def send_cam_image(self,data,client_t):
             await self.server.send_image("W_send_cam_image",data,client_t,)
-            
-    
+
     async def send_combine_images(self, data):
         combined_image = self.server.image_handler.prepare_image()
         for clientId in self.server.frontend_clients: 
