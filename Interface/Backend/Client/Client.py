@@ -64,7 +64,7 @@ class WebSocketClient:
         while ws.keep_running:
             current_status = get_status()
             if current_status != self.previous_status and current_status != " ":
-                ws.send(json.dumps({"type_message": "status", "data": current_status, "client": self.clientId}))
+                ws.send(json.dumps({"type_message": "command","message":"handle_status", "data": current_status, "client": self.clientId}))
                 logging.info(f"Sent status: {current_status}")
                 self.previous_status = current_status
             time.sleep(1)
@@ -84,14 +84,14 @@ class WebSocketClient:
         if self.ws and self.ws.keep_running:
             message_data = {
                 "type_message": "command",
-                "message": "W_send_cam_image",
+                "message": "send_cam_image",
                 "data": self.encode_images(cams),
                 "client": self.clientId
             }
             self.ws.send(json.dumps(message_data))
-            logging.info("Sent machine config")
+            logging.info("Sent images")
         else:
-            logging.info("Cannot send machine config, WebSocket is not running")
+            logging.info("Cannot send images")
 
     def encode_images(self, cams):
         encoded_images = []
@@ -131,9 +131,9 @@ class Calibration_command:
     def __init__(self, client: WebSocketClient):
         self.client = client
         self.client.command_dict = { 
-            "B_end_start_calibration": self.start_calibration,
-            "B_end_stop_calibration": self.stop_calibration,
-            "B_end_initialize_machine": self.initialize_machine
+            "start_calibration": self.start_calibration,
+            "stop_calibration": self.stop_calibration,
+            "initialize_machine": self.initialize_machine
         }
         
     def start_calibration(self, data):

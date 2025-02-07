@@ -9,38 +9,40 @@ class CommandHandler:
         self.lenpc = ""
         self.commands = {
             
-            "B_end_start_calibration": self.start_calibration,
-            "B_end_stop_calibration": self.stop_calibration,
-            "B_end_send_combine_images": self.send_combine_images,
-            "W_send_cam_image": self.send_cam_image,
-            "B_end_initialize_machine": self.initialize_machine
- 
+            "start_calibration": self.start_calibration,
+            "stop_calibration": self.stop_calibration,
+            "send_combine_images": self.send_combine_images,
+            "send_cam_image": self.send_cam_image,
+            "initialize_machine": self.initialize_machine,
+            "handle_config": self.handle_config,
+            "handle_status" : self.handle_status
+
         }
 
     
     async def execute_command(self,message: str,data: str, config: str, client_t: int ):
         if message in self.commands:
             logging.info(f"Executing command: {message}")
-            if message == "B_end_initialize_machine":
+            if message == "initialize_machine":
                 await self.commands[message]()
-            elif message == "W_send_cam_image":
+            elif message == "send_cam_image" or message == "handle_status":
                 await self.commands[message](data,client_t)
             else:
                 await self.commands[message](data)
         else:
             logging.warning(f"Unknown command received: {message}")
     async def initialize_machine(self):
-        await self.server.broadcast_to_backends("B_end_initialize_machine","None")
+        await self.server.broadcast_to_backends("initialize_machine","None")
 
     async def start_calibration(self,data):
-            await self.server.broadcast_to_backends("B_end_start_calibration",data)   
+            await self.server.broadcast_to_backends("start_calibration",data)   
 
     async def stop_calibration(self):
-        await self.server.broadcast_to_backends("B_end_stop_calibration","None")
+        await self.server.broadcast_to_backends("stop_calibration","None")
 
     async def send_cam_image(self,data,client_t):
-            await self.server.send_image("W_send_cam_image",data,client_t,)
-
+            await self.server.send_image("send_cam_image",data,client_t,)
+    
     async def send_combine_images(self, data):
         combined_image = self.server.image_handler.prepare_image()
         for clientId in self.server.frontend_clients: 
@@ -48,3 +50,25 @@ class CommandHandler:
                 "type_message": "picture",
                 "data": combined_image,
             })
+
+    async def handle_config(self,data):
+        self.server.machine_config = data.get("data", "")
+        if self.server.config != self.server.previous_machine_config:
+            await self.server.broadcast_config(self.server.machine_config)
+
+    
+    async def handle_status(self, data, client_t):
+        logging.info(f"Data status: {data} dataend")
+
+        self.server.status = data
+        client = client_t
+        for machine in self.server.machines:
+            if client in machine.logged_pcs:
+                for pc_id, pc in machine.pcs.items():
+                    if int(pc.ip) == int(client):
+                        pc.status.append(self.server.status)
+                        logging.info(f"Set status for PC {client} ip: {pc_id} in machine {machine.name} to {self.server.status}")
+                        await self.server.broadcast_status()
+                        break
+                else:
+                    logging.warning(f"PC {client} not found in machine {machine.name}")

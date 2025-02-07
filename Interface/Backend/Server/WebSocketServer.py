@@ -64,39 +64,14 @@ class WebSocketServer:
                     logging.error(f"Received invalid JSON message from {clientId}")
                     continue
                 message_type = data.get("type_message", "")
-                
                 logging.info(f"Received message from {clientId}: {message}")
-
                 if message_type == "command":
                     command_message = data.get("message", "")
                     command_data = data.get("data", "")
                     config_t = data.get("config", "")
                     client_t = data.get("client","")
                     await self.command_handler.execute_command(command_message, command_data, config_t, client_t)
-
-                elif message_type == "status":
-                    self.status = data.get("data", "")
-                    client = data.get("client", "")
-                    logging.info(f"Updating status for client {client} to {self.status}")
-                    for machine in self.machines:
-                            logging.info(f"Checking machine {machine.name} with logged_pcs: {machine.logged_pcs}")
-                            if client in machine.logged_pcs:
-                                for pc_id, pc in machine.pcs.items():
-                                    print(f"pcip: {pc.ip} == {client}")
-                                    if int(pc.ip) == int(client):
-                                        pc.status.append(self.status)
-                                        logging.info(f"Set status for PC {client} ip: {pc_id} in machine {machine.name} to {self.status}")
-                                        await self.broadcast_status()
-                                        break
-                                else:
-                                    logging.warning(f"PC {client} not found in machine {machine.name}")
-    
-                elif message_type == "config":
-                    self.machine_config = data.get("data", "")
-                    if self.config != self.previous_machine_config:
-                        await self.broadcast_config(self.machine_config)
-
-
+               
         except WebSocketDisconnect:
             logging.info(f"Client {clientId} disconnected")
             self.remove_client(clientId)
@@ -106,7 +81,6 @@ class WebSocketServer:
             self.remove_client(clientId)
 
     async def handle_backend_client(self, websocket: WebSocket, clientId: str):
-        logging.info("Create machine object")
         try:
             while True:
                 message = await websocket.receive_text()
@@ -150,7 +124,7 @@ class WebSocketServer:
         existing_machine_names = [machine.getMachineParameter('name') for machine in self.machines]
         if new_machine.getMachineParameter('name') in existing_machine_names:
             machine_index = existing_machine_names.index(new_machine.getMachineParameter('name'))
-            logging.info(f"Machine object already created")
+            logging.info(f"Machine object already created, continue")
             self.machines[machine_index].logged_pcs.append(ip)
             logging.info("Succesfully put connected pc in connected pcs send to front end")
             await self.broadcast_connected_pcs(self.machines)
@@ -160,13 +134,12 @@ class WebSocketServer:
             self.machines.append(new_machine)
             machine_index = self.machines.index(new_machine)
             self.machines[machine_index].logged_pcs.append(ip)
-            logging.info(f"Succesfully put connected pc {ip} in connected pcs send to front end")
+            logging.info(f"Succesfully put connected pc {ip} in connected")
             await self.broadcast_connected_pcs(self.machines)
             
         try:
             if new_machine in self.machines:
                 machine_index = self.machines.index(new_machine)
-                logging.info(f"CHECK: Number of cameras for machine: {new_machine}: {self.machines[machine_index].getMachineParameter('numb_of_cameras')}")
             for pc_id, pc in self.machines[machine_index].getMachineParameter('pcs').items():
                 logging.info(f"PC {pc_id} for machine {new_machine.getMachineParameter('name')}: {pc}")
 
@@ -175,7 +148,7 @@ class WebSocketServer:
         
 
     async def broadcast_connected_pcs(self, machines):
-        logging.info("send connected pcs")
+        logging.info("Send connected pcs to frontend")
         for clientId in self.frontend_clients:
             await self.send_message_to_client(clientId, {
                 "type_message": "connected_pcs",
@@ -183,7 +156,7 @@ class WebSocketServer:
             })
 
     async def broadcast_status(self):
-        logging.info("Sending ")
+        logging.info("Send status to frontend")
         for machine in self.machines:
             for pc_id, pc in machine.pcs.items():
                 pc_data = {
@@ -198,7 +171,7 @@ class WebSocketServer:
                         "type_message": "status",
                         "data": pc_data,
                     })
-                logging.info(f"Sent status for PC {pc.ip} in machine {machine.name} to frontend")
+
     
 
     async def broadcast_config(self, config: str):
@@ -230,7 +203,6 @@ class WebSocketServer:
         self.backend_clients.pop(clientId, None)
         for machine in self.machines:
             if clientId[8:] in machine.logged_pcs:
-                logging.info(f"Check if {clientId[8:]} is in {machine} in machine {machine.logged_pcs}")
                 pc_index = machine.logged_pcs.index(clientId[8:])
                 logging.info(f"Log out pc: {machine.logged_pcs[pc_index]}")
                 del machine.logged_pcs[pc_index]

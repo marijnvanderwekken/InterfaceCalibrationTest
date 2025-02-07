@@ -4,11 +4,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const wsUrl = `ws://192.168.1.90:8000/ws/${clientId}`;
     let ws = null;
     let machinesData = [];
-    let machines = [];
-    let current_client = "";
-    let current_status = [[]];
     let connected_pcs = [];
-    let pcStatusData = {}; // Object to store each PC's data
+    let pcStatusData = {};
 
     function connectWebSocket() {
         ws = new WebSocket(wsUrl);
@@ -49,10 +46,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         
                     }
                     
-                } else if (message.message === "W_send_cam_image") {
+                } else if (message.message === "send_cam_image") {
                     console.log("Image message received from client", message.client);
-                    console.log("Check machinedata", machinesData);
-
                     const current_client_ip = message.client;
                     let machine_id = null;
                     let pc_id = null;
@@ -74,10 +69,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                         if (machine_id !== null) break;
                     }
-
-                    console.log("Found machineid", machine_id);
-                    console.log("Numbers of cameras:", cams.length);
-                    console.log('Message data', message.data);
 
                     if (Array.isArray(message.data)) {
                         imagedata = message.data.map((base64String, index) => {
@@ -117,23 +108,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function startCalibration(pc_id) {
-        sendMessageToServer("command", "B_end_start_calibration", pc_id);
+        sendMessageToServer("command", "start_calibration", pc_id);
     }
 
     function initialize_machine() {
-        sendMessageToServer("command", "B_end_initialize_machine");
+        sendMessageToServer("command", "initialize_machine");
         updateStatus("Initializing machine...");
-        
-    }
-
-    function displayImage(base64String) {
-        console.log("Message is a picture");
-        const image = new Image();
-        image.src = `data:image/png;base64, ${base64String}`;
-        const imgContainer = document.getElementById("imgContainer");
-        imgContainer.innerHTML = "";
-        imgContainer.appendChild(image);
-        console.log(base64String);
     }
 
     function sendMessageToServer(type_message, message, data) {
@@ -157,19 +137,15 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateStatus(message) {
         const statusElement = document.getElementById("status");
         const outputElement = document.getElementById("output");
-
         statusElement.textContent = message;
-
         const newMessage = document.createElement("div");
         newMessage.textContent = message;
         outputElement.appendChild(newMessage);
-
         outputElement.scrollTop = outputElement.scrollHeight;
-
         console.log(message);
     }
+    
     function updatePCStatus(pc) {
-        console.log(`set status: ${pc.ip}`);
         const statusElement = document.getElementById(`status_${pc.ip}`);
         if (statusElement) {
             statusElement.innerHTML = pc.status.map(status => `<div>${status}</div>`).join('');
@@ -183,17 +159,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (machine.pcs.hasOwnProperty(pcKey)) {
                     const pc = machine.pcs[pcKey];
                     const statusElement = document.getElementById(`status-container-${pc.ip}`);
-                    const allpcElement = document.getElementById("connected-clients");
                     if (statusElement) {
                         statusElement.innerHTML = `<h5>Status: ${connected_pcs.includes(pc.ip.toString()) ? 'Online' : 'Offline'}</h5>`;
                     }
                 }
+    
             }
         });
 
         const allpcElement = document.getElementById("connected-clients");
         if (allpcElement) {
-            allpcElement.innerHTML = connected_pcs.map(ip => `<div>PC ${ip} is connected</div>`).join('');
+            if (connected_pcs.length > 0) {
+                allpcElement.innerHTML = connected_pcs.map(ip => `<div>PC ${ip} is connected</div>`).join('');
+            } else {
+                allpcElement.innerHTML = `<div>No PC connected</div>`;
+            }
         }
     }
 
