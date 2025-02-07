@@ -15,7 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
             initialize_machine();
             initializePCStatusData();
             updatePCConnectionStatus();
-            
         };
 
         ws.onmessage = (event) => {
@@ -28,7 +27,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.log(`Received status update for PC ${pc.ip}: ${pc.status}`);
                     updatePCStatus(pc);
                     pcStatusData[pc.ip] = pc.status;
-                    
                 } else if (message.type_message === "config") {
                     console.log("Config message received:", message.data);
                     let configText = '';
@@ -43,9 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const configElement = document.getElementById("configElement");
                     if (configElement) {
                         configElement.textContent = `${configText}Number of machines in total: ${machinesData.length}`;
-                        
                     }
-                    
                 } else if (message.message === "send_cam_image") {
                     console.log("Image message received from client", message.client);
                     const current_client_ip = message.client;
@@ -144,15 +140,15 @@ document.addEventListener("DOMContentLoaded", () => {
         outputElement.scrollTop = outputElement.scrollHeight;
         console.log(message);
     }
-    
+
     function updatePCStatus(pc) {
         const statusElement = document.getElementById(`status_${pc.ip}`);
         if (statusElement) {
             statusElement.innerHTML = pc.status.map(status => `<div>${status}</div>`).join('');
             statusElement.scrollTop = statusElement.scrollHeight;
         }
-        
-        }
+    }
+
     function updatePCConnectionStatus() {
         machinesData.forEach(machine => {
             for (const pcKey in machine.pcs) {
@@ -160,10 +156,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     const pc = machine.pcs[pcKey];
                     const statusElement = document.getElementById(`status-container-${pc.ip}`);
                     if (statusElement) {
-                        statusElement.innerHTML = `<h5>Status: ${connected_pcs.includes(pc.ip.toString()) ? 'Online' : 'Offline'}</h5>`;
+                        const isConnected = connected_pcs.includes(pc.ip.toString());
+                        statusElement.innerHTML = `
+                            <h5>Status: ${isConnected ? 'Online' : 'Offline'}</h5>
+                            <div style="width: 20px; height: 20px; border-radius: 50%; background-color: ${isConnected ? 'green' : 'red'};"></div>
+                        `;
                     }
                 }
-    
             }
         });
 
@@ -225,8 +224,11 @@ document.addEventListener("DOMContentLoaded", () => {
                             <h3>PC${pc.ip}</h3>
                             <div id="cntr${pc.ip}" style="border: 1px solid #ddd; padding: 10px; margin-top: 10px; width: 90%; margin-bottom: 20px;">
                             <div id="status-container-${pc.ip}">
-                                <h5>Status: ${connected_pcs.includes(pc.ip.toString()) ? 'Online' : 'Offline'}</h5>
+                                <div style="display: flex; align-items: center;">
+                                    <h5>Status: ${connected_pcs.includes(pc.ip.toString()) ? 'Online' : 'Offline'}</h5>
+                                    <div style="width: 20px; height: 20px; border-radius: 50%; background-color: ${connected_pcs.includes(pc.ip.toString()) ? 'green' : 'red'}; margin-left: 1px;"></div>
                                 </div>
+                            </div>
                                 <h5>Number of cameras: ${numCameras}</h5>
                             </div>
                             <div style="border: 1px solid #ddd; padding: 10px; margin-top: 10px; width: 90%; margin-bottom: 10px;">
@@ -271,7 +273,6 @@ document.addEventListener("DOMContentLoaded", () => {
     window.startCalibration = startCalibration;
     window.initialize_machine = initialize_machine;
     connectWebSocket();
-    
 });
 
 function enlargeImg(img) {
