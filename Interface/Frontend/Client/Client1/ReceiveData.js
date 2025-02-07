@@ -7,7 +7,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let machines = [];
     let current_client = "";
     let current_status = [[]];
-    let connected_pcs = []
+    let connected_pcs = [];
+    let pcStatusData = {}; // Object to store each PC's data
 
     function connectWebSocket() {
         ws = new WebSocket(wsUrl);
@@ -15,6 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
         ws.onopen = () => {
             updateStatus(`Connected to server: ${ws.url}`);
             initialize_machine();
+            initializePCStatusData();
+            updatePCConnectionStatus();
+            
         };
 
         ws.onmessage = (event) => {
@@ -23,17 +27,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 const message = JSON.parse(event.data);
 
                 if (message.type_message === "status") {
-                    const current_client = message.client;
-                    if (!current_status[current_client]) {
-                        current_status[current_client] = [];
-                    }
-                    current_status[current_client].push(message.data);
-                    const output = document.getElementById(`status_${current_client}`);
-                    console.log(`Received from client ${current_client}`);
-
-                    output.innerHTML += `<div>${message.data}</div>`;
-                    output.scrollTop = output.scrollHeight;
-
+                    const pc = message.data;
+                    console.log(`Received status update for PC ${pc.ip}: ${pc.status}`);
+                    updatePCStatus(pc);
+                    pcStatusData[pc.ip] = pc.status;
+                    
                 } else if (message.type_message === "config") {
                     console.log("Config message received:", message.data);
                     let configText = '';
@@ -42,15 +40,15 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (message.data.hasOwnProperty(key)) {
                             machinesData.push(message.data[key]);
                             configText += `Machine ID: ${message.data[key].machine_id}, Number of PCs: ${message.data[key].numb_of_pcs}\n`;
+                            generateMachineTabs(machinesData);
                         }
                     }
-                    
-                    generateMachineTabs(machinesData);
                     const configElement = document.getElementById("configElement");
                     if (configElement) {
                         configElement.textContent = `${configText}Number of machines in total: ${machinesData.length}`;
+                        
                     }
-
+                    
                 } else if (message.message === "W_send_cam_image") {
                     console.log("Image message received from client", message.client);
                     console.log("Check machinedata", machinesData);
@@ -101,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else if (message.type_message === "connected_pcs") {
                     connected_pcs = message.data.flat();
                     console.log(connected_pcs);
-                    updatePCStatus();
+                    updatePCConnectionStatus();
                 }
             } catch (e) {
                 console.error("Error parsing message:", e);
@@ -125,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function initialize_machine() {
         sendMessageToServer("command", "B_end_initialize_machine");
         updateStatus("Initializing machine...");
-        generateMachineTabs(machinesData);
+        
     }
 
     function displayImage(base64String) {
@@ -170,19 +168,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
         console.log(message);
     }
-
-    function updatePCStatus() {
+    function updatePCStatus(pc) {
+        console.log(`set status: ${pc.ip}`);
+        const statusElement = document.getElementById(`status_${pc.ip}`);
+        if (statusElement) {
+            statusElement.innerHTML = pc.status.map(status => `<div>${status}</div>`).join('');
+            statusElement.scrollTop = statusElement.scrollHeight;
+        }
+        
+        }
+    function updatePCConnectionStatus() {
         machinesData.forEach(machine => {
             for (const pcKey in machine.pcs) {
                 if (machine.pcs.hasOwnProperty(pcKey)) {
                     const pc = machine.pcs[pcKey];
                     const statusElement = document.getElementById(`status-container-${pc.ip}`);
+                    const allpcElement = document.getElementById("connected-clients");
                     if (statusElement) {
                         statusElement.innerHTML = `<h5>Status: ${connected_pcs.includes(pc.ip.toString()) ? 'Online' : 'Offline'}</h5>`;
                     }
                 }
             }
         });
+
+        const allpcElement = document.getElementById("connected-clients");
+        if (allpcElement) {
+            allpcElement.innerHTML = connected_pcs.map(ip => `<div>PC ${ip} is connected</div>`).join('');
+        }
+    }
+
+    function initializePCStatusData() {
+        for (const machine of machinesData) {
+            for (const pcKey in machine.pcs) {
+                if (machine.pcs.hasOwnProperty(pcKey)) {
+                    const pc = machine.pcs[pcKey];
+                    if (pcStatusData[pc.ip]) {
+                        updatePCStatus({ ip: pc.ip, status: pcStatusData[pc.ip] });
+                    }
+                }
+            }
+        }
     }
 
     function generateMachineTabs(machinesData) {

@@ -1,0 +1,102 @@
+{
+    "0": {
+        "machine_id": "0",
+        "type": "QG",
+        "alias": "QualityGrader1",
+        "name": "QualityGrader1",
+        "description": "QualityGrader1",
+        "numb_of_pcs": 2,
+        "numb_of_cameras": 6,
+        "pcs": {
+            "0": {
+                "pc_id": "0",
+                "ip": 165,
+                "master": 1,
+                "cameras": [
+                    0,
+                    1,
+                    2
+                ]
+            },
+            "1": {
+                "pc_id": "1",
+                "ip": 11,
+                "master": 0,
+                "cameras": [
+                    3,
+                    4,
+                    5
+                ]
+            }
+        }
+    },
+    "1": {
+        "machine_id": "1",
+        "type": "QG",
+        "alias": "QualityGrader2",
+        "name": "QualityGrader2",
+        "description": "QualityGrader2",
+        "numb_of_pcs": 2,
+        "numb_of_cameras": 6,
+        "pcs": {
+            "2": {
+                "pc_id": "2",
+                "ip": 99,
+                "master": 1,
+                "cameras": [
+                    0,
+                    1,
+                    2
+                ]
+            },
+            "3": {
+                "pc_id": "3",
+                "ip": 90,
+                "master": 0,
+                "cameras": [
+                    3,
+                    4,
+                    5
+                ]
+            }
+        }
+    },
+    "2": {
+        "machine_id": "2",
+        "type": "VS",
+        "alias": "Voerscheiding1",
+        "name": "Voerscheiding1",
+        "description": "Voerscheiding1",
+        "numb_of_pcs": 1,
+        "numb_of_cameras": 1,
+        "pcs": {
+            "4": {
+                "pc_id": "4",
+                "ip": 121,
+                "master": 1,
+                "cameras": [
+                    6
+                ]
+            }
+        }
+    },
+    "3": {
+        "machine_id": "3",
+        "type": "VS",
+        "alias": "Voerscheiding2",
+        "name": "Voerscheiding2",
+        "description": "Voerscheiding2",
+        "numb_of_pcs": 1,
+        "numb_of_cameras": 1,
+        "pcs": {
+            "0": {
+                "pc_id": "0",
+                "ip": 12,
+                "master": 1,
+                "cameras": [
+                    6
+                ]
+            }
+        }
+    }
+}

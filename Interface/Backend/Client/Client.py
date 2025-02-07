@@ -137,7 +137,6 @@ class Calibration_command:
         }
         
     def start_calibration(self, data):
-        update_status("Starting calibration process")
         machine_config = self.client.read_hardware_configuration()
         if isinstance(machine_config, str):
             update_status(f"Error in machine configuration: {machine_config}, stop calibration")
@@ -148,7 +147,7 @@ class Calibration_command:
             return
 
         machine = machine_config[data]
-        update_status(f"Calibration request for machine: {data} has {machine['numb_of_pcs']} pcs")
+        
 
         for pc_key in machine['pcs']:
             pc = machine['pcs'][pc_key]

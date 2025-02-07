@@ -11,7 +11,6 @@ class Machine:
         self.numb_of_cameras = config[machine_id]['numb_of_cameras']
         self.pcs = {pc_id: PC(pc_id, pc_data) for pc_id, pc_data in config[machine_id]['pcs'].items()}
         self.logged_pcs = []
-
         logging.info(f"Machine created with: type={self.type}, name={self.name}, numb_of_pcs={self.numb_of_pcs}, numb_of_cameras={self.numb_of_cameras}, pcs={self.pcs}")
 
     def __str__(self):

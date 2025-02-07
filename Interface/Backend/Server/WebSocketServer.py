@@ -41,9 +41,13 @@ class WebSocketServer:
             self.frontend_clients[unique_client_id] = websocket
             clientId = unique_client_id
             logging.info(f"Client id is {clientId}")
+            await self.broadcast_config(self.machine_config)
+            await self.broadcast_status()
         elif clientId.startswith("Back-end"):
             self.backend_clients[clientId] = websocket
             await self.handle_backend_client(websocket, clientId)
+            await self.broadcast_status()
+            await self.broadcast_config(self.machine_config)
         else:
             logging.info(f"Invalid Client ID: {clientId}")
             await websocket.close()
@@ -60,21 +64,33 @@ class WebSocketServer:
                     logging.error(f"Received invalid JSON message from {clientId}")
                     continue
                 message_type = data.get("type_message", "")
-                if message_type != "config":
-                    logging.info(f"Received message from {clientId}: {message}")
+                
+                logging.info(f"Received message from {clientId}: {message}")
 
                 if message_type == "command":
                     command_message = data.get("message", "")
                     command_data = data.get("data", "")
                     config_t = data.get("config", "")
                     client_t = data.get("client","")
-                    
                     await self.command_handler.execute_command(command_message, command_data, config_t, client_t)
+
                 elif message_type == "status":
                     self.status = data.get("data", "")
                     client = data.get("client", "")
-                    if self.status != self.previous_status:
-                        await self.broadcast_status(self.status, client)
+                    logging.info(f"Updating status for client {client} to {self.status}")
+                    for machine in self.machines:
+                            logging.info(f"Checking machine {machine.name} with logged_pcs: {machine.logged_pcs}")
+                            if client in machine.logged_pcs:
+                                for pc_id, pc in machine.pcs.items():
+                                    print(f"pcip: {pc.ip} == {client}")
+                                    if int(pc.ip) == int(client):
+                                        pc.status.append(self.status)
+                                        logging.info(f"Set status for PC {client} ip: {pc_id} in machine {machine.name} to {self.status}")
+                                        await self.broadcast_status()
+                                        break
+                                else:
+                                    logging.warning(f"PC {client} not found in machine {machine.name}")
+    
                 elif message_type == "config":
                     self.machine_config = data.get("data", "")
                     if self.config != self.previous_machine_config:
@@ -144,7 +160,7 @@ class WebSocketServer:
             self.machines.append(new_machine)
             machine_index = self.machines.index(new_machine)
             self.machines[machine_index].logged_pcs.append(ip)
-            logging.info("Succesfully put connected pc in connected pcs send to front end")
+            logging.info(f"Succesfully put connected pc {ip} in connected pcs send to front end")
             await self.broadcast_connected_pcs(self.machines)
             
         try:
@@ -166,13 +182,23 @@ class WebSocketServer:
                 "data": [machine.logged_pcs for machine in machines]
             })
 
-    async def broadcast_status(self, status: str, client: str):
-        for clientId in self.frontend_clients:
-            await self.send_message_to_client(clientId, {
-                "type_message": "status",
-                "data": status,
-                "client": client
-            })
+    async def broadcast_status(self):
+        logging.info("Sending ")
+        for machine in self.machines:
+            for pc_id, pc in machine.pcs.items():
+                pc_data = {
+                    "pc_id": pc.pc_id,
+                    "ip": pc.ip,
+                    "master": pc.master,
+                    "cameras": pc.cameras,
+                    "status": pc.status
+                }
+                for clientId in self.frontend_clients:
+                    await self.send_message_to_client(clientId, {
+                        "type_message": "status",
+                        "data": pc_data,
+                    })
+                logging.info(f"Sent status for PC {pc.ip} in machine {machine.name} to frontend")
     
 
     async def broadcast_config(self, config: str):
