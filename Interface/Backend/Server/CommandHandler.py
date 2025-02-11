@@ -15,7 +15,8 @@ class CommandHandler:
             "send_cam_image": self.send_cam_image,
             "initialize_machine": self.initialize_machine,
             "handle_config": self.handle_config,
-            "handle_status" : self.handle_status
+            "handle_status" : self.handle_status,
+            "handle_images" : self.handle_images
 
         }
 
@@ -25,7 +26,7 @@ class CommandHandler:
             logging.info(f"Executing command: {message}")
             if message == "initialize_machine":
                 await self.commands[message]()
-            elif message == "send_cam_image" or message == "handle_status":
+            elif message == "send_cam_image" or message == "handle_status" or message == "handle_images": 
                 await self.commands[message](data,client_t)
             else:
                 await self.commands[message](data)
@@ -59,7 +60,6 @@ class CommandHandler:
     
     async def handle_status(self, data, client_t):
         self.server.status = data
-
         for machine in self.server.machines:
             if client_t in machine.logged_pcs:
                 for pc_id, pc in machine.pcs.items():
@@ -71,11 +71,12 @@ class CommandHandler:
                 else:
                     logging.warning(f"PC {client_t} not found in machine {machine.name}")
     
-    async def handle_images(self,data,client_t):
-        for machine in self.server.machines:
-            if client_t in machine.logged_pcs:
-                for pc_id, pc in machine.pcs.items():
-                    if int(pc.ip)==int(client_t):
-                        pc.images.append(data)
-                        logging.info(f"Added image for pc {client_t} ip: {pc_id} in machine {machine.name}")
+    async def handle_images(self, data, client_t):
+        if data != "":
+            for machine in self.server.machines:
+                if client_t in machine.logged_pcs:
+                    for pc_id, pc in machine.pcs.items():
+                        if int(pc.ip) == int(client_t):
+                            pc.images = [data]  # Replace the image instead of appending
+                            logging.info(f"Replaced image for pc {client_t} ip: {pc_id} in machine {machine.name}")
 

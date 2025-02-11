@@ -84,7 +84,7 @@ class WebSocketClient:
         if self.ws and self.ws.keep_running:
             message_data = {
                 "type_message": "command",
-                "message": "send_cam_image",
+                "message": "handle_images",
                 "data": self.encode_images(cams),
                 "client": self.clientId
             }

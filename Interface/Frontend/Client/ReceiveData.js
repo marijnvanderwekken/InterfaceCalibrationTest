@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let pcStatusData = {};
     let pcImageData = {};
 
+   
     function connectWebSocket() {
         ws = new WebSocket(wsUrl);
 
@@ -26,8 +27,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (message.type_message === "status") {
                     const pc = message.data;
                     console.log(`Received status update for PC ${pc.ip}: ${pc.status}`);
-                    updatePCStatus(pc);
                     pcStatusData[pc.ip] = pc.status;
+                    pcImageData[pc.ip] = pc.last_images;
+                    updatePCStatus(pc);
+                    updatePCImages(pc);
                 } else if (message.type_message === "config") {
                     console.log("Config message received:", message.data);
                     let configText = '';
@@ -94,6 +97,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         };
 
+
+       
+
         ws.onerror = (error) => {
             updateStatus(`WebSocket error: ${error.message}`);
         };
@@ -149,6 +155,56 @@ document.addEventListener("DOMContentLoaded", () => {
             statusElement.scrollTop = statusElement.scrollHeight;
         }
     }
+    function updatePCImages(pc) {
+        const images = pcImageData[pc.ip];
+        if (images) {
+            const flattenedImages = images.flat();
+            let machine_id = null;
+            for (const machine of machinesData) {
+                for (const pcKey in machine.pcs) {
+                    if (machine.pcs.hasOwnProperty(pcKey)) {
+                        const machinePC = machine.pcs[pcKey];
+                        if (machinePC.ip === pc.ip) {
+                            machine_id = machine.machine_id;
+                            break;
+                        }
+                    }
+                }
+                if (machine_id !== null) break;
+            }
+    
+            if (machine_id === null) {
+                console.error(`Machine ID not found for PC ${pc.ip}`);
+                return;
+            }
+    
+            const cams = pc.cameras;
+            for (let i = 0; i < cams.length; i++) {
+                const imageContainerId = `camera${cams[i]}_pc${pc.pc_id}_machine${machine_id}`;
+                const imageContainer = document.getElementById(imageContainerId);
+                if (imageContainer) {
+                    imageContainer.innerHTML = "";
+                    const base64String = flattenedImages[i];
+                    if (base64String) {
+                        const dataUrl = 'data:image/jpeg;base64,' + base64String;
+                        const img = document.createElement('img');
+                        img.src = dataUrl;
+                        img.alt = `Encoded Image ${i}`;
+                        img.className = "img-responsive";
+                        imageContainer.appendChild(img);
+                        console.log(`Updated image for camera ${cams[i]} on PC ${pc.ip} with ID ${imageContainerId}`);
+                    } else {
+                        console.error(`No base64 string found for camera ${cams[i]} on PC ${pc.ip}`);
+                    }
+                } else {
+                    console.error(`Element with ID '${imageContainerId}' not found`);
+                }
+            }
+        } else {
+            console.error(`No image data found for PC ${pc.ip}`);
+        }
+    }
+    
 
     function updatePCConnectionStatus() {
         machinesData.forEach(machine => {
@@ -214,7 +270,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     pc.cameras.forEach(cameraId => {
                         cameraImages += `
                             <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
-                                <h5>Camera ${cameraId} Image:</h5>
                                 <img id="camera${cameraId}_pc${pc.pc_id}_machine${machine.machine_id}" class="img-responsive" src="" alt="Camera ${cameraId} Image" onclick="enlargeImg(camera${cameraId}_pc${pc.pc_id}_machine${machine.machine_id})">
                             </div>
                         `;
