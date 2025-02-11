@@ -8,6 +8,7 @@ class PC:
         self.cameras = pc_data['cameras']
         logging.info(f"PC created with: pc_id={self.pc_id}, ip={self.ip}, master={self.master}, cameras={self.cameras}")
         self.status = []
+        self.images=[cameras for cameras in self.cameras]
 
     def __str__(self):
         return f"PC{self.pc_id} (IP: {self.ip})"

@@ -65,7 +65,7 @@ class WebSocketClient:
             current_status = get_status()
             if current_status != self.previous_status and current_status != " ":
                 ws.send(json.dumps({"type_message": "command","message":"handle_status", "data": current_status, "client": self.clientId}))
-                logging.info(f"Sent status: {current_status}")
+                logging.info(f"Send status: {current_status}")
                 self.previous_status = current_status
             time.sleep(1)
 
@@ -157,12 +157,14 @@ class Calibration_command:
                     first_calibration_qg = Calibration_qg()
                     calibration_qg_thread = threading.Thread(target=first_calibration_qg.main, args=(), daemon=True)
                     calibration_qg_thread.start()
+                    self.client.send_image(pc['cameras'])
                 else:
                     first_calibration_vs = Calibration_vs()
-                    calibration_qg_thread = threading.Thread(target=first_calibration_vs.main, args=(), daemon=True)
-                    calibration_qg_thread.start()
+                    calibration_vs_thread = threading.Thread(target=first_calibration_vs.main, args=(), daemon=True)
+                    calibration_vs_thread.start()
+                    self.client.send_image(pc['cameras'])
                 
-                self.client.send_image(pc['cameras'])
+                
 
     def stop_calibration(self, data):
         self.client.status = "Stop calibration"

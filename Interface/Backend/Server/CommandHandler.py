@@ -58,17 +58,24 @@ class CommandHandler:
 
     
     async def handle_status(self, data, client_t):
-        logging.info(f"Data status: {data} dataend")
-
         self.server.status = data
-        client = client_t
+
         for machine in self.server.machines:
-            if client in machine.logged_pcs:
+            if client_t in machine.logged_pcs:
                 for pc_id, pc in machine.pcs.items():
-                    if int(pc.ip) == int(client):
+                    if int(pc.ip) == int(client_t):
                         pc.status.append(self.server.status)
-                        logging.info(f"Set status for PC {client} ip: {pc_id} in machine {machine.name} to {self.server.status}")
+                        logging.info(f"Set status for PC {client_t} ip: {pc_id} in machine {machine.name} to {self.server.status}")
                         await self.server.broadcast_status()
                         break
                 else:
-                    logging.warning(f"PC {client} not found in machine {machine.name}")
+                    logging.warning(f"PC {client_t} not found in machine {machine.name}")
+    
+    async def handle_images(self,data,client_t):
+        for machine in self.server.machines:
+            if client_t in machine.logged_pcs:
+                for pc_id, pc in machine.pcs.items():
+                    if int(pc.ip)==int(client_t):
+                        pc.images.append(data)
+                        logging.info(f"Added image for pc {client_t} ip: {pc_id} in machine {machine.name}")
+

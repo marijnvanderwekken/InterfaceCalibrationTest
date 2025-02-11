@@ -129,6 +129,7 @@ class Calibration:
 
         for ip in ips:
             self.extract_cam_images(ip, wd)
+            
 
 
         avg_real_middle_distance = 437 

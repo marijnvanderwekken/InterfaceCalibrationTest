@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let machinesData = [];
     let connected_pcs = [];
     let pcStatusData = {};
+    let pcImageData = {};
 
     function connectWebSocket() {
         ws = new WebSocket(wsUrl);

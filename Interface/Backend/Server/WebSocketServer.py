@@ -167,7 +167,7 @@ class WebSocketServer:
     async def broadcast_connected_pcs(self, machines):
         logging.info("Send connected pcs to frontend")
         for clientId in list(self.frontend_clients.keys()):
-            await self._safe_send_message_to_client(clientId, {
+            await self._send_message_to_client(clientId, {
                 "type_message": "connected_pcs",
                 "data": [machine.logged_pcs for machine in machines]
             })
@@ -181,24 +181,25 @@ class WebSocketServer:
                     "ip": pc.ip,
                     "master": pc.master,
                     "cameras": pc.cameras,
-                    "status": pc.status
+                    "status": pc.status,
+                    "last_images": pc.images
                 }
                 for clientId in list(self.frontend_clients.keys()):
-                    await self._safe_send_message_to_client(clientId, {
+                    await self._send_message_to_client(clientId, {
                         "type_message": "status",
                         "data": pc_data,
                     })
 
     async def broadcast_config(self, config: str):
         for clientId in list(self.frontend_clients.keys()):
-            await self._safe_send_message_to_client(clientId, {
+            await self._send_message_to_client(clientId, {
                 "type_message": "config",
                 "data": config
             })
 
     async def broadcast_to_backends(self, message: str, data: str):
         for clientId in list(self.backend_clients.keys()):
-            await self._safe_send_message_to_client(clientId, {
+            await self._send_message_to_client(clientId, {
                 "type_message": "command",
                 "message": message,
                 "data": data
@@ -206,7 +207,7 @@ class WebSocketServer:
 
     async def send_image(self, message: str, data: str, client: str):
         for clientId in list(self.frontend_clients.keys()):
-            await self._safe_send_message_to_client(clientId, {
+            await self._send_message_to_client(clientId, {
                 "type_message": "command",
                 "message": message,
                 "data": data,
@@ -228,7 +229,7 @@ class WebSocketServer:
         port = self.config.getint('server', 'port', fallback=8000)
         uvicorn.run(self.app, host=host, port=port, timeout_keep_alive=300)
 
-    async def _safe_send_message_to_client(self, clientId: str, message: dict):
+    async def _send_message_to_client(self, clientId: str, message: dict):
         json_message = json.dumps(message)
         try:
             if clientId in self.frontend_clients:
