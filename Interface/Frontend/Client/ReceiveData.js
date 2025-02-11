@@ -1,14 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
     const clientId = "Front-end";
-    const statusr = document.getElementById("status");
     const wsUrl = `ws://192.168.1.90:8000/ws/${clientId}`;
     let ws = null;
     let machinesData = [];
     let connected_pcs = [];
     let pcStatusData = {};
     let pcImageData = {};
-
-   
+    let lastCalibration = [];
     function connectWebSocket() {
         ws = new WebSocket(wsUrl);
 
@@ -16,89 +14,13 @@ document.addEventListener("DOMContentLoaded", () => {
             updateStatus(`Connected to server: ${ws.url}`);
             initialize_machine();
             initializePCStatusData();
+            initializePCImageData();
             updatePCConnectionStatus();
         };
 
         ws.onmessage = (event) => {
-            console.log("Message from server:" + event.data);
-            try {
-                const message = JSON.parse(event.data);
-
-                if (message.type_message === "status") {
-                    const pc = message.data;
-                    console.log(`Received status update for PC ${pc.ip}: ${pc.status}`);
-                    pcStatusData[pc.ip] = pc.status;
-                    pcImageData[pc.ip] = pc.last_images;
-                    updatePCStatus(pc);
-                    updatePCImages(pc);
-                } else if (message.type_message === "config") {
-                    console.log("Config message received:", message.data);
-                    let configText = '';
-                    machinesData = [];
-                    for (const key in message.data) {
-                        if (message.data.hasOwnProperty(key)) {
-                            machinesData.push(message.data[key]);
-                            configText += `Machine ID: ${message.data[key].machine_id}, Number of PCs: ${message.data[key].numb_of_pcs}\n`;
-                            generateMachineTabs(machinesData);
-                        }
-                    }
-                    const configElement = document.getElementById("configElement");
-                    if (configElement) {
-                        configElement.textContent = `${configText}Number of machines in total: ${machinesData.length}`;
-                    }
-                } else if (message.message === "send_cam_image") {
-                    console.log("Image message received from client", message.client);
-                    const current_client_ip = message.client;
-                    let machine_id = null;
-                    let pc_id = null;
-                    let cams = [];
-                    let imagedata = [];
-
-                    for (const machine of machinesData) {
-                        for (const pcKey in machine.pcs) {
-                            if (machine.pcs.hasOwnProperty(pcKey)) {
-                                const pc = machine.pcs[pcKey];
-                                if (pc.ip == current_client_ip) {
-                                    console.log(pc.ip);
-                                    cams = pc.cameras;
-                                    machine_id = machine.machine_id;
-                                    pc_id = pc.pc_id;
-                                    break;
-                                }
-                            }
-                        }
-                        if (machine_id !== null) break;
-                    }
-
-                    if (Array.isArray(message.data)) {
-                        imagedata = message.data.map((base64String, index) => {
-                            return { cameraId: cams[index], base64String };
-                        });
-
-                        for (let i = 0; i < cams.length; i++) {
-                            const imageElement = document.getElementById(`camera${cams[i]}_pc${pc_id}_machine${machine_id}`);
-                            if (imageElement) {
-                                imageElement.src = `data:image/png;base64,${imagedata[i].base64String}`;
-                                console.log(`Updated image for camera ${cams[i]} on PC ${pc_id} of machine ${machine_id}`);
-                            } else {
-                                console.error(`Element with ID 'camera${cams[i]}_pc${pc_id}_machine${machine_id}' not found`);
-                            }
-                        }
-                    } else {
-                        console.error("message.data is not an array of base64 strings");
-                    }
-                } else if (message.type_message === "connected_pcs") {
-                    connected_pcs = message.data.flat();
-                    console.log(connected_pcs);
-                    updatePCConnectionStatus();
-                }
-            } catch (e) {
-                console.error("Error parsing message:", e);
-            }
+            handleServerMessage(event.data);
         };
-
-
-       
 
         ws.onerror = (error) => {
             updateStatus(`WebSocket error: ${error.message}`);
@@ -110,8 +32,66 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
-    function startCalibration(pc_id) {
-        sendMessageToServer("command", "start_calibration", pc_id);
+    function handleServerMessage(data) {
+        console.log("Message from server:" + data);
+        try {
+            const message = JSON.parse(data);
+
+            switch (message.type_message) {
+                case "status":
+                    handleStatusMessage(message.data);
+                    break;
+                case "config":
+                    handleConfigMessage(message.data);
+                    break;
+                case "connected_pcs":
+                    handleConnectedPCsMessage(message.data);
+                    break;
+                default:
+                    console.error("Unknown message type:", message.type_message);
+            }
+        } catch (e) {
+            console.error("Error parsing message:", e);
+        }
+    }
+
+    function handleStatusMessage(pc) {
+        console.log(`Received status update for PC ${pc.ip}: ${pc.status}`);
+        pcStatusData[pc.ip] = pc.status;
+        pcImageData[pc.ip] = pc.last_images;
+        updatePCStatus(pc);
+        updatePCImages(pc);
+        updateLastCalibration(pc);
+    }
+
+    function handleConfigMessage(data) {
+        console.log("Config message received:", data);
+        let configText = '';
+        machinesData = [];
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                machinesData.push(data[key]);
+                configText += `Machine ID: ${data[key].machine_id}, Number of PCs: ${data[key].numb_of_pcs}\n`;
+                generateMachineTabs(machinesData);
+            }
+        }
+        const configElement = document.getElementById("configElement");
+        if (configElement) {
+            configElement.textContent = `${configText}Number of machines in total: ${machinesData.length}`;
+        }
+    }
+
+    function handleConnectedPCsMessage(data) {
+        connected_pcs = data.flat();
+        console.log(connected_pcs);
+        initializePCImageData();
+        updatePCConnectionStatus();
+        
+    }
+    function startCalibration(machine_id) {
+        console.log(machine_id)
+        sendMessageToServer("command", "start_calibration", machine_id);
+   
     }
 
     function initialize_machine() {
@@ -123,15 +103,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type_message, message, data }));
             updateStatus(`Sent ${type_message}: ${message} and data ${data}`);
-        } else {
-            updateStatus("WebSocket is not open");
-        }
-    }
-
-    function sendStatusUpdate(type, message) {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type_message: type, data: message }));
-            updateStatus(`Sent message: ${message}`);
         } else {
             updateStatus("WebSocket is not open");
         }
@@ -155,32 +126,20 @@ document.addEventListener("DOMContentLoaded", () => {
             statusElement.scrollTop = statusElement.scrollHeight;
         }
     }
+
     function updatePCImages(pc) {
         const images = pcImageData[pc.ip];
         if (images) {
             const flattenedImages = images.flat();
-            let machine_id = null;
-            for (const machine of machinesData) {
-                for (const pcKey in machine.pcs) {
-                    if (machine.pcs.hasOwnProperty(pcKey)) {
-                        const machinePC = machine.pcs[pcKey];
-                        if (machinePC.ip === pc.ip) {
-                            machine_id = machine.machine_id;
-                            break;
-                        }
-                    }
-                }
-                if (machine_id !== null) break;
-            }
-    
+            const machine_id = getMachineIdForPC(pc.ip);
             if (machine_id === null) {
                 console.error(`Machine ID not found for PC ${pc.ip}`);
                 return;
             }
-    
+
             const cams = pc.cameras;
-            for (let i = 0; i < cams.length; i++) {
-                const imageContainerId = `camera${cams[i]}_pc${pc.pc_id}_machine${machine_id}`;
+            cams.forEach((cameraId, i) => {
+                const imageContainerId = `camera${cameraId}_pc${pc.pc_id}_machine${machine_id}`;
                 const imageContainer = document.getElementById(imageContainerId);
                 if (imageContainer) {
                     imageContainer.innerHTML = "";
@@ -192,19 +151,43 @@ document.addEventListener("DOMContentLoaded", () => {
                         img.alt = `Encoded Image ${i}`;
                         img.className = "img-responsive";
                         imageContainer.appendChild(img);
-                        console.log(`Updated image for camera ${cams[i]} on PC ${pc.ip} with ID ${imageContainerId}`);
+                        console.log(`Updated image for camera ${cameraId} on PC ${pc.ip} with ID ${imageContainerId}`);
                     } else {
-                        console.error(`No base64 string found for camera ${cams[i]} on PC ${pc.ip}`);
+                        console.error(`No base64 string found for camera ${cameraId} on PC ${pc.ip}`);
                     }
                 } else {
                     console.error(`Element with ID '${imageContainerId}' not found`);
                 }
-            }
+            });
         } else {
             console.error(`No image data found for PC ${pc.ip}`);
         }
     }
-    
+
+    function getMachineIdForPC(pc_ip) {
+        for (const machine of machinesData) {
+            for (const pcKey in machine.pcs) {
+                if (machine.pcs.hasOwnProperty(pcKey)) {
+                    const machinePC = machine.pcs[pcKey];
+                    if (machinePC.ip === pc_ip) {
+                        return machine.machine_id;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    function updateLastCalibration(pc) {
+        const lastCalibrationElement = document.getElementById(`last_calibration${pc.pc_id}`);
+        if (lastCalibrationElement) {
+            const lastCalibrationArray = Array.isArray(pc.last_calibration) ? pc.last_calibration : [pc.last_calibration];
+            lastCalibrationElement.innerHTML = lastCalibrationArray.map(calibration => `<div>${calibration}</div>`).join('');
+            lastCalibrationElement.scrollTop = lastCalibrationElement.scrollHeight;
+        } else {
+            console.error(`Element with ID 'last_calibration${pc.pc_id}' not found`);
+        }
+    }
 
     function updatePCConnectionStatus() {
         machinesData.forEach(machine => {
@@ -225,16 +208,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const allpcElement = document.getElementById("connected-clients");
         if (allpcElement) {
-            if (connected_pcs.length > 0) {
-                allpcElement.innerHTML = connected_pcs.map(ip => `<div>PC ${ip} is connected</div>`).join('');
-            } else {
-                allpcElement.innerHTML = `<div>No PC connected</div>`;
-            }
+            allpcElement.innerHTML = connected_pcs.length > 0
+                ? connected_pcs.map(ip => `<div>PC ${ip} is connected</div>`).join('')
+                : `<div>No PC connected</div>`;
         }
     }
 
     function initializePCStatusData() {
-        for (const machine of machinesData) {
+        machinesData.forEach(machine => {
             for (const pcKey in machine.pcs) {
                 if (machine.pcs.hasOwnProperty(pcKey)) {
                     const pc = machine.pcs[pcKey];
@@ -243,30 +224,43 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 }
             }
-        }
+        });
+    }
+
+    function initializePCImageData() {
+        machinesData.forEach(machine => {
+            for (const pcKey in machine.pcs) {
+                if (machine.pcs.hasOwnProperty(pcKey)) {
+                    const pc = machine.pcs[pcKey];
+                    if (pcImageData[pc.ip]) {
+                        updatePCImages({ ip: pc.ip, cameras: pc.cameras, pc_id: pc.pc_id });
+                    }
+                }
+            }
+        });
     }
 
     function generateMachineTabs(machinesData) {
         const tabsContainer = document.getElementById("machineTabs");
         const contentContainer = document.getElementById("tabContent");
-
+    
         tabsContainer.innerHTML = `
-        <li class="active"><a data-toggle="tab" style="color: #2e5426;" href="#start">Start</a></li>
-        <li><a data-toggle="tab" style="color: #2e5426;" href="#calibrations">Calibrations</a></li>
-    `;
-
+            <li class="active"><a data-toggle="tab" style="color: #2e5426;" href="#start">Start</a></li>
+            <li><a data-toggle="tab" style="color: #2e5426;" href="#calibrations">Calibrations</a></li>
+        `;
+    
         machinesData.forEach((machine, index) => {
             tabsContainer.innerHTML += `
                 <li><a data-toggle="tab" style="color: #2e5426;" href="#machine${index}">${machine.name}</a></li>
             `;
-
+    
             let pcSections = "";
             for (const pcKey in machine.pcs) {
                 if (machine.pcs.hasOwnProperty(pcKey)) {
                     const pc = machine.pcs[pcKey];
                     const numCameras = pc.cameras.length;
                     let cameraImages = "";
-
+    
                     pc.cameras.forEach(cameraId => {
                         cameraImages += `
                             <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
@@ -274,17 +268,17 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                         `;
                     });
-
+    
                     pcSections += `
                         <div class="col-md-4 pc-section" style="border: 1px solid #ddd; margin-top: 10px; width: 40%; margin: 0 10px;">
                             <h3>PC${pc.ip}</h3>
                             <div id="cntr${pc.ip}" style="border: 1px solid #ddd; padding: 10px; margin-top: 10px; width: 90%; margin-bottom: 20px;">
-                            <div id="status-container-${pc.ip}">
-                                <div style="display: flex; align-items: center;">
-                                    <h5>Status: ${connected_pcs.includes(pc.ip.toString()) ? 'Online' : 'Offline'}</h5>
-                                    <div style="width: 20px; height: 20px; border-radius: 50%; background-color: ${connected_pcs.includes(pc.ip.toString()) ? 'green' : 'red'}; margin-left: 1px;"></div>
+                                <div id="status-container-${pc.ip}">
+                                    <div style="display: flex; align-items: center;">
+                                        <h5>Status: ${connected_pcs.includes(pc.ip.toString()) ? 'Online' : 'Offline'}</h5>
+                                        <div style="width: 20px; height: 20px; border-radius: 50%; background-color: ${connected_pcs.includes(pc.ip.toString()) ? 'green' : 'red'}; margin-left: 1px;"></div>
+                                    </div>
                                 </div>
-                            </div>
                                 <h5>Number of cameras: ${numCameras}</h5>
                             </div>
                             <div style="border: 1px solid #ddd; padding: 10px; margin-top: 10px; width: 90%; margin-bottom: 10px;">
@@ -297,11 +291,15 @@ document.addEventListener("DOMContentLoaded", () => {
                                 </div>
                                 <p>Click on the image to zoom in</p>
                             </div>
+                            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 10px;">
+                            <h5>Last calibration:</h5>
+                            <div id="last_calibration${pc.pc_id}"></div>
+                            </div>
                         </div>
                     `;
                 }
             }
-
+    
             contentContainer.innerHTML += `
                 <div id="machine${index}" class="tab-pane fade">
                     <div id="contentBox${machine.machine_id}" class="row justify-content-center" style="margin:10px auto; width:100%; display: flex; justify-content: center;">
@@ -325,7 +323,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     window.sendMessageToServer = sendMessageToServer;
-    window.sendStatusUpdate = sendStatusUpdate;
     window.startCalibration = startCalibration;
     window.initialize_machine = initialize_machine;
     connectWebSocket();

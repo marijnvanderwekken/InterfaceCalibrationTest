@@ -1,6 +1,7 @@
 import logging
 from ImageHandler import ImageHandler
 import json
+from datetime import datetime
 class CommandHandler:
     def __init__(self, server):
         self.image_handler = ImageHandler()
@@ -23,7 +24,7 @@ class CommandHandler:
     
     async def execute_command(self,message: str,data: str, config: str, client_t: int ):
         if message in self.commands:
-            logging.info(f"Executing command: {message}")
+
             if message == "initialize_machine":
                 await self.commands[message]()
             elif message == "send_cam_image" or message == "handle_status" or message == "handle_images": 
@@ -35,12 +36,18 @@ class CommandHandler:
     async def initialize_machine(self):
         await self.server.broadcast_to_backends("initialize_machine","None")
 
-    async def start_calibration(self,data):
-            await self.server.broadcast_to_backends("start_calibration",data)   
+    async def start_calibration(self, data):
+        machineid = data
+        await self.server.broadcast_to_backends("start_calibration", machineid)
+
+        for i in range(len(self.server.machines)):
+            machine_param = self.server.machines[i].getMachineParameter('machine_id')
+            if machine_param == machineid:
+                self.server.machines[i].last_calibration = datetime.now().isoformat()
 
     async def stop_calibration(self):
         await self.server.broadcast_to_backends("stop_calibration","None")
-
+        
     async def send_cam_image(self,data,client_t):
             await self.server.send_image("send_cam_image",data,client_t,)
     
@@ -77,6 +84,6 @@ class CommandHandler:
                 if client_t in machine.logged_pcs:
                     for pc_id, pc in machine.pcs.items():
                         if int(pc.ip) == int(client_t):
-                            pc.images = [data]  # Replace the image instead of appending
+                            pc.images = [data]
                             logging.info(f"Replaced image for pc {client_t} ip: {pc_id} in machine {machine.name}")
 

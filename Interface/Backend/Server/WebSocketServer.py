@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import configparser
+
 from ImageHandler import ImageHandler
 from CommandHandler import CommandHandler 
 from Machine import Machine
@@ -103,9 +104,9 @@ class WebSocketServer:
                     continue
 
                 message_type = data.get("type_message", "")
-                logging.info(f"Received message from {clientId}: {message}")
+                # logging.info(f"Received message from {clientId}: {message}")
                 if message_type == "command":
-                    await self._execute_command(data, clientId)
+                    await self._execute_command(data)
         except WebSocketDisconnect:
             logging.info(f"Client {clientId} disconnected")
             self.remove_client(clientId)
@@ -121,7 +122,8 @@ class WebSocketServer:
             logging.error(f"Received invalid JSON message from {clientId}")
             return None
 
-    async def _execute_command(self, data: dict, clientId: str):
+    async def _execute_command(self, data: dict):
+        
         command_message = data.get("message", "")
         command_data = data.get("data", "")
         config_t = data.get("config", "")
@@ -177,12 +179,15 @@ class WebSocketServer:
         for machine in self.machines:
             for pc_id, pc in machine.pcs.items():
                 pc_data = {
+                    
                     "pc_id": pc.pc_id,
+                    "last_calibration": machine.last_calibration,
                     "ip": pc.ip,
                     "master": pc.master,
                     "cameras": pc.cameras,
                     "status": pc.status,
                     "last_images": pc.images
+                    
                 }
                 for clientId in list(self.frontend_clients.keys()):
                     await self._send_message_to_client(clientId, {

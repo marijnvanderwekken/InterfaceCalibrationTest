@@ -10,5 +10,6 @@ class PC:
         self.status = []
         self.images=[cameras for cameras in self.cameras]
 
+
     def __str__(self):
         return f"PC{self.pc_id} (IP: {self.ip})"
