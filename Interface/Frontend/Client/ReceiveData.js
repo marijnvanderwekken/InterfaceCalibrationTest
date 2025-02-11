@@ -84,7 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function handleConnectedPCsMessage(data) {
         connected_pcs = data.flat();
         console.log(connected_pcs);
-        initializePCImageData();
         updatePCConnectionStatus();
         
     }
@@ -270,7 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
     
                     pcSections += `
-                        <div class="col-md-4 pc-section" style="border: 1px solid #ddd; margin-top: 10px; width: 40%; margin: 0 10px;">
+                        <div class="col-md-4 pc-section" style="border: 1px solid #ddd; margin-top: 10px; width: 90%; margin: 0 10px;">
                             <h3>PC${pc.ip}</h3>
                             <div id="cntr${pc.ip}" style="border: 1px solid #ddd; padding: 10px; margin-top: 10px; width: 90%; margin-bottom: 20px;">
                                 <div id="status-container-${pc.ip}">

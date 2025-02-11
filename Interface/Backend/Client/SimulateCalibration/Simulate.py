@@ -14,15 +14,15 @@ from threading import Thread
 import queue
 import threading
 import time
-from sendStatus import update_status
+from sendStatus import *
 
 class Calibration_vs:
         def main(self):
-            update_status("Starting vs grader script")
+            update_status_info("Starting vs grader script")
 
 class Calibration_qg:
     def main(self):
-            update_status("Starting qg grader script")
+            update_status_info("Starting qg grader script")
     
 class Calibration:
     
@@ -36,45 +36,46 @@ class Calibration:
 
     def clear_directory(self,directory_path):
         sleep(random.uniform(0.1, 0.5))  
-        update_status(f"Clearing directory: {directory_path}")
+        update_status_info(f"Clearing directory: {directory_path}")
 
     def retrieve_data_from_file(self,file_path):
         sleep(random.uniform(0.1, 0.5))  
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:
                 data = [line.strip() for line in file if line.strip()]
-            update_status(f"Reading {len(data)} lines from {file_path}")
+            update_status_info(f"Reading {len(data)} lines from {file_path}")
             return data
         else:
-            update_status(f"Warning: File {file_path} not found.")
+            update_status_info(f"Warning: File {file_path} not found.")
             return []
 
     def simulate_ssh_command(self,ip, command):
         sleep(random.uniform(0.1, 0.5))
-        update_status(f"SSH command on {ip}: {command}")
+        update_status_info(f"SSH command on {ip}: {command}")
 
     def merge_files_in_folder(self,folder_path):
         sleep(random.uniform(0.1, 0.5))
-        update_status(f"Merging files in {folder_path}")
+        update_status_info(f"Merging files in {folder_path}")
 
     def extract_exposure(self,ip):
         sleep(random.uniform(0.1, 0.5)) 
-        update_status(f"Exposure extraction for {ip}")
+        update_status_info(f"Exposure extraction for {ip}")
 
     def extract_cam_images(self,ip, wd):
         sleep(random.uniform(0.1, 0.5))
-        update_status(f"Camera image extraction from {ip} to {wd}")
+        update_status_info(f"Camera image extraction from {ip} to {wd}")
 
 
-    def main_calibration(self,ip_addres,number_pc,machine_config, machine_id):
+    def main_calibration(self):
         
         ip_addres = "1.1.1.1"
         number_pc = 2
         machine_config = 63
+        machine_id = 1
 
         wd = Path.cwd() / "utilities"
 
-        update_status(f"Starting calibration with ip: {ip_addres}" f" and with {number_pc} number of pcs "  f"And with machine config: {machine_config} on machine: {machine_id}")
+        update_status_info(f"Starting calibration with ip: {ip_addres}" f" and with {number_pc} number of pcs "  f"And with machine config: {machine_config} on machine: {machine_id}")
         exposuretime_file = wd / "exposuretime.txt"
         device_settings_file = wd / "G_device_settings.ini"
         
@@ -93,14 +94,14 @@ class Calibration:
             new_ip = f"{'.'.join(main_ip.split('.')[:-1])}.{int(main_ip.split('.')[-1]) + i}"
             ips.append(new_ip)
 
-        update_status(f" IPs: {ips}")
+        update_status_info(f" IPs: {ips}")
 
 
         for ip in ips:
             if self.simulate_ping(ip):
-                update_status(f" {ip} is reachable.")
+                update_status_info(f" {ip} is reachable.")
             else:
-                update_status(f" {ip} is NOT reachable.")
+                update_status_error(f" {ip} is NOT reachable.")
 
 
         for ip in ips:
@@ -116,9 +117,9 @@ class Calibration:
 
         if os.path.exists(device_settings_file):
             global_d["G_settings"].read(str(device_settings_file))
-            update_status(f"Loaded configuration from {device_settings_file}")
+            update_status_info(f"Loaded configuration from {device_settings_file}")
         else:
-            update_status(f"Configuration file {device_settings_file} not found.")
+            update_status_error(f"Configuration file {device_settings_file} not found.")
 
         config_name = "_Farmer"
         machine_id = random.randint(1, 10)
@@ -152,9 +153,9 @@ class Calibration:
 
         if os.path.exists(device_settings_path):
             device_config.read(str(device_settings_path))
-            update_status(f" Loaded device settings from {device_settings_path}")
+            update_status_info(f" Loaded device settings from {device_settings_path}")
         else:
-            update_status(f" Device settings file {device_settings_path} not found.")
+            update_status_error(f" Device settings file {device_settings_path} not found.")
 
         device_config["QG_decisions"]["numbofrows"] = "4"
         for index, exposure in enumerate(exposuretime_list):
@@ -167,11 +168,10 @@ class Calibration:
 
         with open(device_settings_path, 'w') as configFile:
             device_config.write(configFile)
-            update_status(f" Updated settings saved to {device_settings_path}")
-
+            update_status_info(f" Updated settings saved to {device_settings_path}")
 
         pdf_saved = True 
-        update_status(f" Generated PDF for {save_name}")
+        update_status_info(f" Generated PDF for {save_name}")
 
         if len(ips) > 1:
             self.simulate_ssh_command(ips[0], "python3 sync_code_with_slaves.py")
@@ -187,15 +187,14 @@ class Calibration:
         save_dir_hour_minute = save_dir_date / f"{now.hour}_{now.minute}"
         save_dir_hour_minute.mkdir(parents=True, exist_ok=True)
 
-        update_status(f" Saving results to {save_dir_hour_minute}")
-
+        update_status_info(f" Saving results to {save_dir_hour_minute}")
 
         if pdf_saved:
-            update_status(" PDF file copied successfully.")
+            update_status_info(" PDF file copied successfully.")
         else:
-            update_status(" Error: PDF file could not be copied.")
+            update_status_error(" PDF file could not be copied.")
 
-        update_status("Simulation complete. All steps executed.")
+        update_status_info("Simulation complete. All steps executed.")
 
 # if __name__ == "__main__":
 #     logging.basicConfig(level=logging.INFO)

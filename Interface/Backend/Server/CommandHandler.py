@@ -18,9 +18,7 @@ class CommandHandler:
             "handle_config": self.handle_config,
             "handle_status" : self.handle_status,
             "handle_images" : self.handle_images
-
         }
-
     
     async def execute_command(self,message: str,data: str, config: str, client_t: int ):
         if message in self.commands:

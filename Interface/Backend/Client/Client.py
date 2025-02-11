@@ -5,8 +5,8 @@ import json
 import base64
 import os
 import time
-from sendStatus import get_status, update_status
-from SimulateCalibration.Simulate import Calibration_vs, Calibration_qg
+from sendStatus import *
+from SimulateCalibration.Simulate import *
 
 class WebSocketClient:
     def __init__(self):
@@ -36,8 +36,8 @@ class WebSocketClient:
                 self.ws.on_open = self.on_open
                 self.ws.run_forever()
             except Exception as e:
-                logging.error(f"Connection error: {e}")
-                logging.error("Reconnecting in 5 seconds...")
+                update_status_error(f"Connection error: {e}")
+                update_status_error("Reconnecting in 5 seconds...")
                 time.sleep(5)
 
     def on_message(self, ws, message):
@@ -55,7 +55,7 @@ class WebSocketClient:
             logging.warning("Received non-JSON message, ignoring...")
 
     def on_error(self, ws, error):
-        logging.error(f"WebSocket error: {error}")
+        update_status_error(f"WebSocket error: {error}")
 
     def on_close(self, ws, close_status_code, close_msg):
         logging.info(f"Connection closed with status code: {close_status_code}, message: {close_msg}")
@@ -95,7 +95,7 @@ class WebSocketClient:
 
     def encode_images(self, cams):
         encoded_images = []
-        update_status(f"Start to encode: {len(cams)}")
+        update_status_info(f"Start to encode: {len(cams)}")
         try:
             for index in range(len(cams)):
                 image_file = os.path.join(os.getcwd(), f"utilities/cam{cams[index]}.jpg")
@@ -103,13 +103,13 @@ class WebSocketClient:
                     with open(image_file, "rb") as img:
                         encoded_string = base64.b64encode(img.read()).decode('utf-8')
                         encoded_images.append(encoded_string)
-                        update_status(f"Encoded image: {cams[index]}")
+                        update_status_info(f"Encoded image: {cams[index]}")
                 except FileNotFoundError:
-                    logging.error(f"File not found: {image_file}")
+                    update_status_error(f"File not found: {image_file}")
                 except Exception as e:
-                    logging.error(f"Error encoding image {image_file}: {e}")
+                    update_status_error(f"Error encoding image {image_file}: {e}")
         except Exception as e:
-            logging.error(f"Unexpected error: {e}")
+            update_status_error(f"Unexpected error: {e}")
         return encoded_images
 
     def on_open(self, ws):
@@ -124,7 +124,7 @@ class WebSocketClient:
                 self.machine_config = json.load(json_data)
             return self.machine_config
         except Exception as e:
-            logging.error(f"Error reading hardware configuration: {e}")
+            update_status_error(f"Error reading hardware configuration: {e}")
             return {}
 
 class Calibration_command:
@@ -139,20 +139,24 @@ class Calibration_command:
     def start_calibration(self, data):
         machine_config = self.client.read_hardware_configuration()
         if isinstance(machine_config, str):
-            update_status(f"Error in machine configuration: {machine_config}, stop calibration")
+            update_status_error(f"in machine configuration: {machine_config}, stop calibration")
             return
 
         if data not in machine_config:
-            update_status(f"Machine ID {data} not found in configuration, stop calibration")
+            update_status_error(f"Machine ID {data} not found in configuration, stop calibration")
             return
 
         machine = machine_config[data]
         
 
+       
+
+        
+        
         for pc_key in machine['pcs']:
             pc = machine['pcs'][pc_key]
             if self.client.last_octet == str(pc['ip']):
-                update_status(f"Start calibrating on this pc {pc['ip']}")
+                update_status_info(f"Start calibrating on this pc {pc['ip']}")
                 if machine['type'] == "QG":   
                     first_calibration_qg = Calibration_qg()
                     calibration_qg_thread = threading.Thread(target=first_calibration_qg.main, args=(), daemon=True)
@@ -163,9 +167,12 @@ class Calibration_command:
                     calibration_vs_thread = threading.Thread(target=first_calibration_vs.main, args=(), daemon=True)
                     calibration_vs_thread.start()
                     self.client.send_image(pc['cameras'])
+            #self.client.send_image(pc['cameras'])
+        #     first_overal_calibration = Calibration()
+        # first_overal_calibration = threading.Thread(target=first_overal_calibration.main_calibration, args=(), daemon=True)
+        # first_overal_calibration.start()
                 
-                
-
+            
     def stop_calibration(self, data):
         self.client.status = "Stop calibration"
 

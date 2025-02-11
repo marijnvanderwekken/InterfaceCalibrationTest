@@ -11,9 +11,17 @@ def get_status():
         return status_queue.get()
     return " "
 
-def update_status(new_status):
-    status_queue.put(new_status)
+def update_status_info(new_status):
+    status_queue.put(f": {new_status}")
 
+def update_status_warning(new_status):
+    status_queue.put(f"Warning: {new_status}")
+
+def update_status_error(new_status):
+    status_queue.put(f"Error: {new_status}")
+
+def update_status_critical(new_status):
+    status_queue.put(f"Criticial: {new_status}")
 
 
 #Values:
