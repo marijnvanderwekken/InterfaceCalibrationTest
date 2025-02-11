@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let connected_pcs = [];
     let pcStatusData = {};
     let pcImageData = {};
-    let lastCalibration = [];
     function connectWebSocket() {
         ws = new WebSocket(wsUrl);
 
@@ -85,12 +84,12 @@ document.addEventListener("DOMContentLoaded", () => {
         connected_pcs = data.flat();
         console.log(connected_pcs);
         updatePCConnectionStatus();
-        
+
     }
     function startCalibration(machine_id) {
         console.log(machine_id)
         sendMessageToServer("command", "start_calibration", machine_id);
-   
+
     }
 
     function initialize_machine() {
@@ -149,6 +148,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         img.src = dataUrl;
                         img.alt = `Encoded Image ${i}`;
                         img.className = "img-responsive";
+                        img.style.maxWidth = "100%";
+                        img.style.maxHeight = "200px";
                         imageContainer.appendChild(img);
                         console.log(`Updated image for camera ${cameraId} on PC ${pc.ip} with ID ${imageContainerId}`);
                     } else {
@@ -242,63 +243,63 @@ document.addEventListener("DOMContentLoaded", () => {
     function generateMachineTabs(machinesData) {
         const tabsContainer = document.getElementById("machineTabs");
         const contentContainer = document.getElementById("tabContent");
-    
+
         tabsContainer.innerHTML = `
             <li class="active"><a data-toggle="tab" style="color: #2e5426;" href="#start">Start</a></li>
             <li><a data-toggle="tab" style="color: #2e5426;" href="#calibrations">Calibrations</a></li>
         `;
-    
+
         machinesData.forEach((machine, index) => {
             tabsContainer.innerHTML += `
                 <li><a data-toggle="tab" style="color: #2e5426;" href="#machine${index}">${machine.name}</a></li>
             `;
-    
+
             let pcSections = "";
             for (const pcKey in machine.pcs) {
                 if (machine.pcs.hasOwnProperty(pcKey)) {
                     const pc = machine.pcs[pcKey];
                     const numCameras = pc.cameras.length;
                     let cameraImages = "";
-    
+
                     pc.cameras.forEach(cameraId => {
                         cameraImages += `
-                            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 20px;">
+                            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 30%; margin-bottom: 20px; justify-content: center; display: flex;">
                                 <img id="camera${cameraId}_pc${pc.pc_id}_machine${machine.machine_id}" class="img-responsive" src="" alt="Camera ${cameraId} Image" onclick="enlargeImg(camera${cameraId}_pc${pc.pc_id}_machine${machine.machine_id})">
                             </div>
                         `;
                     });
-    
+
                     pcSections += `
-                        <div class="col-md-4 pc-section" style="border: 1px solid #ddd; margin-top: 10px; width: 90%; margin: 0 10px;">
-                            <h3>PC${pc.ip}</h3>
-                            <div id="cntr${pc.ip}" style="border: 1px solid #ddd; padding: 10px; margin-top: 10px; width: 90%; margin-bottom: 20px;">
-                                <div id="status-container-${pc.ip}">
-                                    <div style="display: flex; align-items: center;">
-                                        <h5>Status: ${connected_pcs.includes(pc.ip.toString()) ? 'Online' : 'Offline'}</h5>
-                                        <div style="width: 20px; height: 20px; border-radius: 50%; background-color: ${connected_pcs.includes(pc.ip.toString()) ? 'green' : 'red'}; margin-left: 1px;"></div>
-                                    </div>
-                                </div>
-                                <h5>Number of cameras: ${numCameras}</h5>
-                            </div>
-                            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 10px; width: 90%; margin-bottom: 10px;">
-                                <h5>Status of PC${pc.ip}</h5>
-                                <div id="status_${pc.ip}" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 100%; height: 90px; overflow-y: auto;"></div>
-                            </div>
-                            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 10px;">
-                                <div id="cameraContainer_${pc.pc_id}_${machine.machine_id}" style="display: flex; overflow-x: auto; width: 100%;">
-                                    ${cameraImages}
-                                </div>
-                                <p>Click on the image to zoom in</p>
-                            </div>
-                            <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 10px;">
-                            <h5>Last calibration:</h5>
-                            <div id="last_calibration${pc.pc_id}"></div>
-                            </div>
+                                <div class="col-md-4 pc-section" style="border: 1px solid #ddd; margin-top: 10px; width: 90%; margin: 0 10px;">
+                <h3>PC${pc.ip}</h3>
+                <div id="cntr${pc.ip}" style="border: 1px solid #ddd; padding: 10px; margin-top: 10px; width: 90%; margin-bottom: 20px;">
+                    <div id="status-container-${pc.ip}">
+                        <div style="display: flex; align-items: center;">
+                            <h5>Status: ${connected_pcs.includes(pc.ip.toString()) ? 'Online' : 'Offline'}</h5>
+                            <div style="width: 20px; height: 20px; border-radius: 50%; background-color: ${connected_pcs.includes(pc.ip.toString()) ? 'green' : 'red'}; margin-left: 1px;"></div>
                         </div>
+                    </div>
+                    <h5>Number of cameras: ${numCameras}</h5>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 10px; margin-top: 10px; width: 90%; margin-bottom: 10px;">
+                    <h5>Status of PC${pc.ip}</h5>
+                    <div id="status_${pc.ip}" class="border p-3" style="border: 1px solid #ddd; padding: 10px; width: 100%; height: 90px; overflow-y: auto;"></div>
+                </div>
+                <div id="cameraContainer_${pc.pc_id}_${machine.machine_id}_outer" style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 10px;">
+                    <div id="cameraContainer_${pc.pc_id}_${machine.machine_id}_inner" style="display: flex; overflow-x: auto; width: 100%; height: auto; justify-content: center;">
+                        ${cameraImages}
+                    </div>
+                    <p>Click on the image to zoom in</p>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 90%; margin-bottom: 10px;">
+                    <h5>Last calibration:</h5>
+                    <div id="last_calibration${pc.pc_id}"></div>
+                </div>
+            </div>
                     `;
                 }
             }
-    
+
             contentContainer.innerHTML += `
                 <div id="machine${index}" class="tab-pane fade">
                     <div id="contentBox${machine.machine_id}" class="row justify-content-center" style="margin:10px auto; width:100%; display: flex; justify-content: center;">

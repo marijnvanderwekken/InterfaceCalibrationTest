@@ -6,7 +6,8 @@ import base64
 import os
 import time
 from sendStatus import *
-from SimulateCalibration.Simulate import *
+
+from NewCalibrationScript.Calibration_qg import *
 
 class WebSocketClient:
     def __init__(self):
@@ -157,21 +158,20 @@ class Calibration_command:
             pc = machine['pcs'][pc_key]
             if self.client.last_octet == str(pc['ip']):
                 update_status_info(f"Start calibrating on this pc {pc['ip']}")
-                if machine['type'] == "QG":   
-                    first_calibration_qg = Calibration_qg()
-                    calibration_qg_thread = threading.Thread(target=first_calibration_qg.main, args=(), daemon=True)
+                if machine['type'] == "VS":   
+                    calibration_qg_thread = threading.Thread(target=qgmain(), args=(), daemon=True)
                     calibration_qg_thread.start()
-                    self.client.send_image(pc['cameras'])
+                    calibration_qg_thread.join()
+                    #self.client.send_image(pc['cameras'])
                 else:
-                    first_calibration_vs = Calibration_vs()
-                    calibration_vs_thread = threading.Thread(target=first_calibration_vs.main, args=(), daemon=True)
-                    calibration_vs_thread.start()
-                    self.client.send_image(pc['cameras'])
-            #self.client.send_image(pc['cameras'])
-        #     first_overal_calibration = Calibration()
-        # first_overal_calibration = threading.Thread(target=first_overal_calibration.main_calibration, args=(), daemon=True)
-        # first_overal_calibration.start()
-                
+                    # first_calibration_vs = Calibration_vs()
+                    # calibration_vs_thread = threading.Thread(target=first_calibration_vs.main, args=(), daemon=True)
+                    # calibration_vs_thread.start()
+                    # calibration_vs_thread.join()
+                    # self.client.send_image(pc['cameras'])
+            
+                    update_status_info("Calibration process completed")
+               
             
     def stop_calibration(self, data):
         self.client.status = "Stop calibration"
