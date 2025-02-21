@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     const clientId = "Front-end";
-    const wsUrl = `ws://192.168.1.90:8000/ws/${clientId}`;
+    const wsUrl = `ws://127.0.0.1:8000/ws/${clientId}`;
+    console.log(wsUrl);
     let ws = null;
     let machinesData = [];
     let connected_pcs = [];

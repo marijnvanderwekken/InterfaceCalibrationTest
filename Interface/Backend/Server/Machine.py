@@ -14,11 +14,14 @@ class Machine:
         self.last_calibration = None
         logging.info(f"Machine created with: type={self.type}, name={self.name}, numb_of_pcs={self.numb_of_pcs}, numb_of_cameras={self.numb_of_cameras}, pcs={self.pcs}")
 
+
     def __str__(self):
         return f"{self.name}"
 
+
     def getMachineParameter(self, parameter):
         return getattr(self, parameter, None)
+
 
     @staticmethod
     def find_machine_id_by_ip(config, ip):
