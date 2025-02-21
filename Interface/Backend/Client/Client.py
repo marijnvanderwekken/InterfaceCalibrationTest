@@ -8,7 +8,7 @@ import time
 from sendStatus import *
 
 from NewCalibrationScript.Calibration_qg import *
-
+from SimulateCalibration.Simulate import Calibration_vs, Calibration_qg
 class WebSocketClient:
     def __init__(self):
         self.command = Calibration_command(self)
@@ -152,25 +152,20 @@ class Calibration_command:
 
        
 
-        
-        
         for pc_key in machine['pcs']:
             pc = machine['pcs'][pc_key]
             if self.client.last_octet == str(pc['ip']):
                 update_status_info(f"Start calibrating on this pc {pc['ip']}")
-                if machine['type'] == "VS":   
-                    calibration_qg_thread = threading.Thread(target=qgmain(), args=(), daemon=True)
+                if machine['type'] == "QG":   
+                    first_calibration_qg = Calibration_qg()
+                    calibration_qg_thread = threading.Thread(target=first_calibration_qg.main, args=(), daemon=True)
                     calibration_qg_thread.start()
-                    calibration_qg_thread.join()
-                    #self.client.send_image(pc['cameras'])
+                    self.client.send_image(pc['cameras'])
                 else:
-                    # first_calibration_vs = Calibration_vs()
-                    # calibration_vs_thread = threading.Thread(target=first_calibration_vs.main, args=(), daemon=True)
-                    # calibration_vs_thread.start()
-                    # calibration_vs_thread.join()
-                    # self.client.send_image(pc['cameras'])
-            
-                    update_status_info("Calibration process completed")
+                    first_calibration_vs = Calibration_vs()
+                    calibration_vs_thread = threading.Thread(target=first_calibration_vs.main, args=(), daemon=True)
+                    calibration_vs_thread.start()
+                    self.client.send_image(pc['cameras'])
                
             
     def stop_calibration(self, data):

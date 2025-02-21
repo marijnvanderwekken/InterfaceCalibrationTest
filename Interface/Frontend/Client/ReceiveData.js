@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let connected_pcs = [];
     let pcStatusData = {};
     let pcImageData = {};
+
     function connectWebSocket() {
         ws = new WebSocket(wsUrl);
 
@@ -84,12 +85,11 @@ document.addEventListener("DOMContentLoaded", () => {
         connected_pcs = data.flat();
         console.log(connected_pcs);
         updatePCConnectionStatus();
-
     }
-    function startCalibration(machine_id) {
-        console.log(machine_id)
-        sendMessageToServer("command", "start_calibration", machine_id);
 
+    function startCalibration(machine_id) {
+        console.log(machine_id);
+        sendMessageToServer("command", "start_calibration", machine_id);
     }
 
     function initialize_machine() {
@@ -150,6 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         img.className = "img-responsive";
                         img.style.maxWidth = "100%";
                         img.style.maxHeight = "200px";
+                        img.onclick = () => enlargeImg(img);
                         imageContainer.appendChild(img);
                         console.log(`Updated image for camera ${cameraId} on PC ${pc.ip} with ID ${imageContainerId}`);
                     } else {
@@ -264,7 +265,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     pc.cameras.forEach(cameraId => {
                         cameraImages += `
                             <div style="border: 1px solid #ddd; padding: 10px; margin-top: 20px; width: 30%; margin-bottom: 20px; justify-content: center; display: flex;">
-                                <img id="camera${cameraId}_pc${pc.pc_id}_machine${machine.machine_id}" class="img-responsive" src="" alt="Camera ${cameraId} Image" onclick="enlargeImg(camera${cameraId}_pc${pc.pc_id}_machine${machine.machine_id})">
+                                <img id="camera${cameraId}_pc${pc.pc_id}_machine${machine.machine_id}" class="img-responsive" src="" alt="Camera ${cameraId} Image" onclick="enlargeImg(this)">
                             </div>
                         `;
                     });
@@ -330,6 +331,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function enlargeImg(img) {
     if (!document.fullscreenElement) {
+        img.dataset.oldStyle = img.getAttribute("style") || "";
+        img.style.maxWidth = "100vw";
+        img.style.maxHeight = "100vh";
+        img.style.width = "100vw";
+        img.style.height = "100vh";
+        img.style.objectFit = "contain";
+        img.style.backgroundColor = "black";
+        img.style.position = "fixed";
+        img.style.top = "0";
+        img.style.left = "0";
+
         if (img.requestFullscreen) {
             img.requestFullscreen();
         } else if (img.mozRequestFullScreen) {
@@ -348,6 +360,12 @@ function enlargeImg(img) {
             document.webkitExitFullscreen();
         } else if (document.msExitFullscreen) {
             document.msExitFullscreen();
+        }
+
+        if (img.dataset.oldStyle !== undefined) {
+            setTimeout(() => {
+                img.setAttribute("style", img.dataset.oldStyle);
+            }, 300);
         }
     }
 }
